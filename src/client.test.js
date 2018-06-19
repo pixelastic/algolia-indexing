@@ -17,6 +17,7 @@ describe('client', () => {
   const mockClient = {
     copyIndex: jest.fn(),
     initIndex: jest.fn(),
+    batch: jest.fn(),
   };
   beforeEach(helper.globalBeforeEach);
   beforeEach(() => {
@@ -152,6 +153,76 @@ describe('client', () => {
       module.initIndex('foo');
 
       expect(mockClient.initIndex).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('runBatchSync', () => {
+    it('splits the batch in smaller chunks', async () => {
+      const batches = ['foo', 'bar', 'baz'];
+      const userOptions = { batchSize: 1 };
+      mockClient.batch.mockReturnValue({ taskID: {} });
+
+      await module.runBatchSync(batches, userOptions);
+
+      expect(mockClient.batch).toHaveBeenCalledWith(['foo']);
+      expect(mockClient.batch).toHaveBeenCalledWith(['bar']);
+      expect(mockClient.batch).toHaveBeenCalledWith(['baz']);
+    });
+
+    it('waits for tasks on all indexes', async () => {
+      const batches = ['foo', 'bar', 'baz'];
+      const userOptions = { batchSize: 1 };
+      mockClient.batch.mockReturnValue({
+        taskID: {
+          indexfoo: 1234,
+          indexbar: 5678,
+        },
+      });
+      const mockInitIndex = helper.mockPrivate(module, 'initIndex', mockIndex);
+
+      await module.runBatchSync(batches, userOptions);
+
+      expect(mockInitIndex).toHaveBeenCalledWith('indexfoo');
+      expect(mockInitIndex).toHaveBeenCalledWith('indexbar');
+      expect(mockIndex.waitTask).toHaveBeenCalledWith(1234);
+      expect(mockIndex.waitTask).toHaveBeenCalledWith(5678);
+    });
+
+    it('emits an error if cannot batch', async () => {
+      const batches = ['foo', 'bar', 'baz'];
+      const userOptions = { batchSize: 1 };
+      mockClient.batch.mockImplementation(() => {
+        throw new Error();
+      });
+
+      await module.runBatchSync(batches, userOptions);
+
+      expect(pulse.emit).toHaveBeenCalledWith('error', anyString);
+    });
+
+    it('emits a start and end event', async () => {
+      const batches = ['foo', 'bar', 'baz'];
+      const userOptions = { batchSize: 1 };
+      mockClient.batch.mockReturnValue({ taskID: {} });
+
+      await module.runBatchSync(batches, userOptions);
+
+      expect(pulse.emit).toHaveBeenCalledWith('batch:start', {
+        batchCount: 3,
+        batchSize: 1,
+      });
+      expect(pulse.emit).toHaveBeenCalledWith('batch:end');
+    });
+
+    it('emits chunk events', async () => {
+      const batches = ['foo', 'bar', 'baz'];
+      const userOptions = { batchSize: 2 };
+      mockClient.batch.mockReturnValue({ taskID: {} });
+
+      await module.runBatchSync(batches, userOptions);
+
+      expect(pulse.emit).toHaveBeenCalledWith('batch:chunk', { chunkSize: 2 });
+      expect(pulse.emit).toHaveBeenCalledWith('batch:chunk', { chunkSize: 1 });
     });
   });
 });

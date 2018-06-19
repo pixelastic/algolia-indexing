@@ -93,6 +93,17 @@ function initIndex(indexName) {
 // Note that the "Sync" does not mean you can write synchronous blocking code
 // but that it will wait for the Algolia API to apply them. Also note that it
 // might split the actual batch into smaller batches
+/**
+ * Run a set of batch operations and wait until they finish.
+ * @param {Array} batches Array of batch operations
+ * @param {Object} userOptions Options to handle the throughput
+ * - .batchSize: How many batches operations max per call
+ * - .concurrency: How many HTTP calls in parallel
+ * @return {Void}
+ * Note: This is not a blocking operation, the method still returns a Promise,
+ * but it will wait for the Algolia API to have executed all the jobs before
+ * resolving. It will also chunk large batches into smaller batches.
+ **/
 async function runBatchSync(batches, userOptions = {}) {
   const options = {
     batchSize: QUOTAS.batchMaxSize,
@@ -100,10 +111,11 @@ async function runBatchSync(batches, userOptions = {}) {
     ...userOptions,
   };
   const chunks = _.chunk(batches, options.batchSize);
-  console.info(
-    `Pushing ${batches.length} operations in batches of ${options.batchSize}`
-  );
 
+  pulse.emit('batch:start', {
+    batchCount: batches.length,
+    batchSize: options.batchSize,
+  });
   await pMap(
     chunks,
     async (chunk, index) => {
@@ -116,12 +128,14 @@ async function runBatchSync(batches, userOptions = {}) {
           const taskID = taskIDPerIndex[indexName];
           await initIndex(indexName).waitTask(taskID);
         });
+        pulse.emit('batch:chunk', { chunkSize: chunk.length });
       } catch (err) {
-        errorHandler(err, `Unable to send batch #${index}`);
+        pulse.emit('error', `Unable to send batch #${index}`);
       }
     },
     { concurrency: options.concurrency }
   );
+  pulse.emit('batch:end');
 }
 
 // Copy settings from one index to a new one
