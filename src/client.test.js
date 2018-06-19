@@ -16,6 +16,7 @@ describe('client', () => {
   };
   const mockClient = {
     copyIndex: jest.fn(),
+    initIndex: jest.fn(),
   };
   beforeEach(helper.globalBeforeEach);
   beforeEach(() => {
@@ -132,6 +133,25 @@ describe('client', () => {
       const actual = await module.indexExists('foo');
 
       expect(actual).toEqual(false);
+    });
+  });
+
+  describe('initIndex', () => {
+    it('should return the index object from the client', () => {
+      mockClient.initIndex.mockReturnValue(mockIndex);
+
+      const actual = module.initIndex('foo');
+
+      expect(actual).toEqual(mockIndex);
+    });
+
+    it('should read the value from cache if asked several times', () => {
+      mockClient.initIndex.mockReturnValue(mockIndex);
+
+      module.initIndex('foo');
+      module.initIndex('foo');
+
+      expect(mockClient.initIndex).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -8,10 +8,11 @@ const QUOTAS = {
   batchMaxConcurrency: 10,
 };
 let client;
-const indexes = {};
+let indexes;
 
 function init(appId, apiKey) {
   client = algoliasearch(appId, apiKey);
+  indexes = {};
 }
 
 /**
@@ -55,7 +56,13 @@ async function copyIndexSync(source, destination) {
   }
 }
 
-// Check if an index exists
+/**
+ * Check if an index exists
+ * @param {String} indexName Name of the index to check
+ * @returns {Boolean} True if the index exists, false otherwise
+ * Note: There is no API endpoint to check if an index exist, so we'll try to
+ * get its settings to guess.
+ **/
 async function indexExists(indexName) {
   try {
     await initIndex(indexName).getSettings();
@@ -65,7 +72,12 @@ async function indexExists(indexName) {
   }
 }
 
-// Return an index from and indexName
+/**
+ * Return an index object from an indexName
+ * @param {String} indexName Name of the index
+ * @returns {Object} Algolia index object
+ * Note: This is a wrapper around client.initIndex, but using a local cache
+ **/
 function initIndex(indexName) {
   const cacheHit = indexes[indexName];
   if (cacheHit) {
