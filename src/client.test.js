@@ -12,6 +12,7 @@ describe('client', () => {
     waitTask: jest.fn(),
     clearIndex: jest.fn(),
     setSettings: jest.fn(),
+    getSettings: jest.fn(),
   };
   const mockClient = {
     copyIndex: jest.fn(),
@@ -109,6 +110,28 @@ describe('client', () => {
 
         expect(pulse.emit).toHaveBeenCalledWith('error', anyString);
       });
+    });
+  });
+
+  describe('indexExists', () => {
+    beforeEach(() => {
+      helper.mockPrivate(module, 'initIndex', mockIndex);
+    });
+
+    it('should return true if can get settings', async () => {
+      const actual = await module.indexExists('foo');
+
+      expect(actual).toEqual(true);
+    });
+
+    it('should return false if cannot get settings', async () => {
+      mockIndex.getSettings.mockImplementation(() => {
+        throw new Error();
+      });
+
+      const actual = await module.indexExists('foo');
+
+      expect(actual).toEqual(false);
     });
   });
 });
