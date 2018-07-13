@@ -1,12 +1,14 @@
-function mockPrivate(module, methodName, returnValue = undefined) {
-  const mockMethod = jest.fn(() => returnValue);
-  module.__RewireAPI__.__Rewire__(methodName, mockMethod);
-  return mockMethod;
-}
+const module = {
+  /**
+   * Returns a method to mock the specified module
+   * @param {Object} moduleToMock The module to mock
+   * @returns {Function} Function to call with methodName and (optional) return value
+   **/
+  mock(moduleToMock) {
+    return function(methodName, value) {
+      return jest.spyOn(moduleToMock, methodName).mockReturnValue(value);
+    };
+  },
+};
 
-function globalBeforeEach() {
-  __rewire_reset_all__();
-}
-
-export { mockPrivate, globalBeforeEach };
-export default { mockPrivate, globalBeforeEach };
+export default module;

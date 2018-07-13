@@ -1,8 +1,8 @@
-/* eslint-disable import/no-commonjs */
-import module from './client';
-import helper from './test-helper';
-jest.mock('./pulse');
-import pulse from './pulse';
+import module from '../client';
+import helper from '../test-helper';
+const mock = helper.mock(module);
+jest.mock('../pulse');
+import pulse from '../pulse';
 jest.mock('algoliasearch');
 import algoliasearch from 'algoliasearch';
 const anyString = expect.any(String);
@@ -19,7 +19,6 @@ describe('client', () => {
     initIndex: jest.fn(),
     batch: jest.fn(),
   };
-  beforeEach(helper.globalBeforeEach);
   beforeEach(() => {
     algoliasearch.mockReturnValue(mockClient);
     module.init();
@@ -27,7 +26,7 @@ describe('client', () => {
 
   describe('clearIndexSync', () => {
     it('should wait for the waitTask to complete', async () => {
-      helper.mockPrivate(module, 'initIndex', mockIndex);
+      mock('initIndex', mockIndex);
       mockIndex.clearIndex.mockReturnValue({ taskID: 1234 });
 
       await module.clearIndexSync('indexName');
@@ -36,7 +35,7 @@ describe('client', () => {
     });
 
     it('should emit a start and end event', async () => {
-      helper.mockPrivate(module, 'initIndex', mockIndex);
+      mock('initIndex', mockIndex);
       mockIndex.clearIndex.mockReturnValue({ taskID: 1234 });
 
       await module.clearIndexSync('indexName');
@@ -47,7 +46,7 @@ describe('client', () => {
 
     describe('on error', () => {
       it('should emit an error if not possible', async () => {
-        helper.mockPrivate(module, 'initIndex', mockIndex);
+        mock('initIndex', mockIndex);
         mockIndex.clearIndex.mockImplementation(() => {
           throw new Error();
         });
@@ -61,11 +60,9 @@ describe('client', () => {
 
   describe('copyIndexSync', () => {
     describe('source does not exist', () => {
-      beforeEach(() => {
-        helper.mockPrivate(module, 'indexExists', false);
-      });
       it('should create an empty index', async () => {
-        helper.mockPrivate(module, 'initIndex', mockIndex);
+        mock('indexExists', false);
+        mock('initIndex', mockIndex);
 
         await module.copyIndexSync('foo', 'bar');
 
@@ -75,12 +72,12 @@ describe('client', () => {
 
     describe('source exists', () => {
       beforeEach(() => {
-        helper.mockPrivate(module, 'indexExists', true);
+        mock('indexExists').mockReturnValue(true);
       });
 
       it('should wait for the waitTask to complete', async () => {
         mockClient.copyIndex.mockReturnValue({ taskID: 1234 });
-        helper.mockPrivate(module, 'initIndex', mockIndex);
+        mock('initIndex', mockIndex);
 
         await module.copyIndexSync('foo', 'bar');
 
@@ -89,7 +86,7 @@ describe('client', () => {
 
       it('should emit a start and end event', async () => {
         mockClient.copyIndex.mockReturnValue({ taskID: 1234 });
-        helper.mockPrivate(module, 'initIndex', mockIndex);
+        mock('initIndex', mockIndex);
 
         await module.copyIndexSync('foo', 'bar');
 
@@ -117,7 +114,7 @@ describe('client', () => {
 
   describe('indexExists', () => {
     beforeEach(() => {
-      helper.mockPrivate(module, 'initIndex', mockIndex);
+      mock('initIndex').mockReturnValue(mockIndex);
     });
 
     it('should return true if can get settings', async () => {
@@ -178,7 +175,7 @@ describe('client', () => {
           indexbar: 5678,
         },
       });
-      const mockInitIndex = helper.mockPrivate(module, 'initIndex', mockIndex);
+      const mockInitIndex = mock('initIndex', mockIndex);
 
       await module.runBatchSync(batches, userOptions);
 

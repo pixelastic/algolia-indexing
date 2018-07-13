@@ -3,188 +3,179 @@ import _ from 'lodash';
 import chalk from 'chalk';
 import pMap from 'p-map';
 import pulse from './pulse';
-const QUOTAS = {
-  batchMaxSize: 1000,
-  batchMaxConcurrency: 10,
-};
-let client;
-let indexes;
 
-function init(appId, apiKey) {
-  client = algoliasearch(appId, apiKey);
-  indexes = {};
-}
+const module = {
+  QUOTAS: {
+    batchMaxSize: 1000,
+    batchMaxConcurrency: 10,
+  },
+  client: null,
+  indexes: null,
 
-/**
- * Clear an index and wait until it is cleaned
- * @param {String} indexName Name of the index to clean
- * @returns {Void}
- **/
-async function clearIndexSync(indexName) {
-  pulse.emit('clearIndex:start', indexName);
-  try {
-    const index = initIndex(indexName);
-    const response = await index.clearIndex();
-    await index.waitTask(response.taskID);
-    pulse.emit('clearIndex:end', indexName);
-  } catch (err) {
-    pulse.emit('error', `Unable to clear index ${indexName}`);
-  }
-}
+  /**
+   * Init the module with the Algolia credentials
+   * @param {String} appId The application id
+   * @param {String} apiKey The API key
+   * @returns {Void}
+   **/
+  init(appId, apiKey) {
+    this.client = algoliasearch(appId, apiKey);
+    this.indexes = {};
+  },
 
-/**
- * Create a copy of an existing index
- * @param {String} source Name of the source index
- * @param {String} destination Name of the destination index
- * @returns {Promise} Wait for the new index to be created
- **/
-async function copyIndexSync(source, destination) {
-  pulse.emit('copyIndex:start', { source, destination });
-  // If the source index does not exist, we simply create it. We can't copy an
-  // empty index because we won't be able to wait for the task to finish.
-  if (!await indexExists(source)) {
-    await initIndex(source).setSettings({});
-    pulse.emit('copyIndex:end', { source, destination });
-    return;
-  }
-  try {
-    const response = await client.copyIndex(source, destination);
-    await initIndex(source).waitTask(response.taskID);
-    pulse.emit('copyIndex:end', { source, destination });
-  } catch (err) {
-    pulse.emit('error', `Unable to copy index ${source} to ${destination}`);
-  }
-}
+  /**
+   * Return an index object from an indexName
+   * @param {String} indexName Name of the index
+   * @returns {Object} Algolia index object
+   * Note: This is a wrapper around client.initIndex, but using a local cache
+   **/
+  initIndex(indexName) {
+    const cacheHit = this.indexes[indexName];
+    if (cacheHit) {
+      return cacheHit;
+    }
 
-/**
- * Check if an index exists
- * @param {String} indexName Name of the index to check
- * @returns {Boolean} True if the index exists, false otherwise
- * Note: There is no API endpoint to check if an index exist, so we'll try to
- * get its settings to guess.
- **/
-async function indexExists(indexName) {
-  try {
-    await initIndex(indexName).getSettings();
-    return true;
-  } catch (err) {
-    return false;
-  }
-}
+    const newIndex = this.client.initIndex(indexName);
+    this.indexes[indexName] = newIndex;
+    return newIndex;
+  },
 
-/**
- * Return an index object from an indexName
- * @param {String} indexName Name of the index
- * @returns {Object} Algolia index object
- * Note: This is a wrapper around client.initIndex, but using a local cache
- **/
-function initIndex(indexName) {
-  const cacheHit = indexes[indexName];
-  if (cacheHit) {
-    return cacheHit;
-  }
+  /**
+   * Clear an index and wait until it is cleaned
+   * @param {String} indexName Name of the index to clean
+   * @returns {Void}
+   **/
+  async clearIndexSync(indexName) {
+    pulse.emit('clearIndex:start', indexName);
+    try {
+      const index = this.initIndex(indexName);
+      const response = await index.clearIndex();
+      await index.waitTask(response.taskID);
+      pulse.emit('clearIndex:end', indexName);
+    } catch (err) {
+      pulse.emit('error', `Unable to clear index ${indexName}`);
+    }
+  },
 
-  const newIndex = client.initIndex(indexName);
-  indexes[indexName] = newIndex;
-  return newIndex;
-}
+  /**
+   * Create a copy of an existing index
+   * @param {String} source Name of the source index
+   * @param {String} destination Name of the destination index
+   * @returns {Promise} Wait for the new index to be created
+   **/
+  async copyIndexSync(source, destination) {
+    pulse.emit('copyIndex:start', { source, destination });
+    // If the source index does not exist, we simply create it. We can't copy an
+    // empty index because we won't be able to wait for the task to finish.
+    if (!await this.indexExists(source)) {
+      await this.initIndex(source).setSettings({});
+      pulse.emit('copyIndex:end', { source, destination });
+      return;
+    }
+    try {
+      const response = await this.client.copyIndex(source, destination);
+      await this.initIndex(source).waitTask(response.taskID);
+      pulse.emit('copyIndex:end', { source, destination });
+    } catch (err) {
+      pulse.emit('error', `Unable to copy index ${source} to ${destination}`);
+    }
+  },
 
-// Run an array of batch operations and resolve when they are all applied.
-// Note that the "Sync" does not mean you can write synchronous blocking code
-// but that it will wait for the Algolia API to apply them. Also note that it
-// might split the actual batch into smaller batches
-/**
- * Run a set of batch operations and wait until they finish.
- * @param {Array} batches Array of batch operations
- * @param {Object} userOptions Options to handle the throughput
- * - .batchSize: How many batches operations max per call
- * - .concurrency: How many HTTP calls in parallel
- * @return {Void}
- * Note: This is not a blocking operation, the method still returns a Promise,
- * but it will wait for the Algolia API to have executed all the jobs before
- * resolving. It will also chunk large batches into smaller batches.
- **/
-async function runBatchSync(batches, userOptions = {}) {
-  const options = {
-    batchSize: QUOTAS.batchMaxSize,
-    concurrency: QUOTAS.batchMaxConcurrency,
-    ...userOptions,
-  };
-  const chunks = _.chunk(batches, options.batchSize);
+  /**
+   * Set settings to an index
+   * @param {String} indexName Name of the index
+   * @param {Object} settings Settings of the index
+   * @returns {Void}
+   **/
+  async setSettingsSync(indexName, settings) {
+    console.info(`Update settings on ${indexName}`);
+    try {
+      const index = this.initIndex(indexName);
+      const response = await index.setSettings(settings);
+      await index.waitTask(response.taskID);
+    } catch (err) {
+      errorHandler(err, `Unable to set settings to ${indexName}`);
+    }
+  },
 
-  pulse.emit('batch:start', {
-    batchCount: batches.length,
-    batchSize: options.batchSize,
-  });
-  await pMap(
-    chunks,
-    async (chunk, index) => {
-      try {
-        const response = await client.batch(chunk);
+  /**
+   * Check if an index exists
+   * @param {String} indexName Name of the index to check
+   * @returns {Boolean} True if the index exists, false otherwise
+   * Note: There is no API endpoint to check if an index exist, so we'll try to
+   * get its settings to guess.
+   **/
+  async indexExists(indexName) {
+    try {
+      await this.initIndex(indexName).getSettings();
+      return true;
+    } catch (err) {
+      return false;
+    }
+  },
 
-        // Now waiting for the batch to be executed on all the indexes
-        const taskIDPerIndex = response.taskID;
-        await pMap(_.keys(taskIDPerIndex), async indexName => {
-          const taskID = taskIDPerIndex[indexName];
-          await initIndex(indexName).waitTask(taskID);
-        });
-        pulse.emit('batch:chunk', { chunkSize: chunk.length });
-      } catch (err) {
-        pulse.emit('error', `Unable to send batch #${index}`);
-      }
-    },
-    { concurrency: options.concurrency }
-  );
-  pulse.emit('batch:end');
-}
+  /**
+   * Run a set of batch operations and wait until they finish.
+   * @param {Array} batches Array of batch operations
+   * @param {Object} userOptions Options to handle the throughput
+   * - .batchSize: How many batches operations max per call
+   * - .concurrency: How many HTTP calls in parallel
+   * @return {Void}
+   * Note: This is not a blocking operation, the method still returns a Promise,
+   * but it will wait for the Algolia API to have executed all the jobs before
+   * resolving. It will also chunk large batches into smaller batches.
+   **/
+  async runBatchSync(batches, userOptions = {}) {
+    const options = {
+      batchSize: this.QUOTAS.batchMaxSize,
+      concurrency: this.QUOTAS.batchMaxConcurrency,
+      ...userOptions,
+    };
+    const chunks = _.chunk(batches, options.batchSize);
 
-// Copy settings from one index to a new one
-async function setSettingsSync(indexName, settings) {
-  console.info(`Update settings on ${indexName}`);
-  try {
-    const index = initIndex(indexName);
-    const response = await index.setSettings(settings);
-    await index.waitTask(response.taskID);
-  } catch (err) {
-    errorHandler(err, `Unable to set settings to ${indexName}`);
-  }
-}
+    pulse.emit('batch:start', {
+      batchCount: batches.length,
+      batchSize: options.batchSize,
+    });
+    await pMap(
+      chunks,
+      async (chunk, index) => {
+        try {
+          const response = await this.client.batch(chunk);
 
-// Display errors
-function errorHandler(err, customMessage) {
-  // console.error(err);
-  if (customMessage) {
-    console.error(chalk.bold.red(customMessage));
-  }
-  if (err.message) {
-    console.error(chalk.red(err.message));
-  }
-  throw new Error(customMessage || err.message || err);
-}
+          // Now waiting for the batch to be executed on all the indexes
+          const taskIDPerIndex = response.taskID;
+          await pMap(_.keys(taskIDPerIndex), async indexName => {
+            const taskID = taskIDPerIndex[indexName];
+            await this.initIndex(indexName).waitTask(taskID);
+          });
+          pulse.emit('batch:chunk', { chunkSize: chunk.length });
+        } catch (err) {
+          pulse.emit('error', `Unable to send batch #${index}`);
+        }
+      },
+      { concurrency: options.concurrency }
+    );
+    pulse.emit('batch:end');
+  },
 
-/**
- * Create a client instance. This client is an alternative version of the
- * regular algoliasearch helper that includes several methods to help in doing
- * atomic indexing.
- * Most of the methods available are prefix with `Sync` meaning that they will
- * wait for the Algolia API to actually process the job before resolving. It
- * does not mean they will perform a blocking operation, though; they will still
- * be asynchronous, but only resolve when the Algolia API will have processed
- * them.
- * @param {String} appId The Algolia Application Id
- * @param {String} apiKey The Algolia Admin API key
- * @returns {Object} An alternative Algolia client for performing indexing
- * operations
- **/
-export default {
-  init,
-  clearIndexSync,
-  copyIndexSync,
-  indexExists,
-  initIndex,
-  runBatchSync,
-  setSettingsSync,
-  internals: {
-    errorHandler,
+  /**
+   * Display error messages
+   * @param {Object} err The error object as thrown
+   * @param {String} customMessage A custom message to display instead of the
+   * error
+   * @returns {Void}
+   **/
+  errorHandler(err, customMessage) {
+    // console.error(err);
+    if (customMessage) {
+      console.error(chalk.bold.red(customMessage));
+    }
+    if (err.message) {
+      console.error(chalk.red(err.message));
+    }
+    throw new Error(customMessage || err.message || err);
   },
 };
+
+export default _.bindAll(module, _.functions(module));
