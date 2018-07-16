@@ -20,9 +20,17 @@ const module = {
     return records;
   },
 
-  // TODO: getRemoteObjectIds
-  // Should be split into a more generic function in client. browseAll, should
-  // return all the records by browsing them and returning an array of records
+  /**
+   * Returns a list of all object ids stored in the manifest index
+   * @param {String} indexName Name of the manifest index
+   * @returns {Array} List of object ids stored in the manifest index
+   **/
+  async getRemoteObjectIds(indexName) {
+    const records = await client.getAllRecords(indexName, {
+      attributesToRetrieve: 'content',
+    });
+    return _.flatten(_.map(records, 'content'));
+  },
 
   async run(inputRecords, settings, credentials) {
     const appId = _.get(credentials, 'appId');
@@ -71,11 +79,10 @@ const module = {
       console.info(err);
       console.info('Unable to update records');
     }
-  }
-}
+  },
+};
 
 export default _.bindAll(module, _.functions(module));
-
 
 // const QUOTAS = {
 //   manifestBrowseStep: 1000,
@@ -111,7 +118,6 @@ export default _.bindAll(module, _.functions(module));
 //     return [];
 //   }
 // }
-
 
 // // Get all the local objectID from a record array
 // function getLocalObjectIds(records) {

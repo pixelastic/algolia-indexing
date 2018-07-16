@@ -152,10 +152,6 @@ const module = {
     }
   },
 
-  // // Get all objectIds saved in the remote manifest
-  // async function getRemoteObjectIds(indexManifestName) {
-  // }
-
   /**
    * Run a set of batch operations and wait until they finish.
    * @param {Array} batches Array of batch operations
