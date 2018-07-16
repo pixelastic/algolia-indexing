@@ -2,146 +2,210 @@ import _ from 'lodash';
 import nodeObjectHash from 'node-object-hash';
 import pAll from 'p-all';
 import client from './client';
-const QUOTAS = {
-  manifestBrowseStep: 1000,
-  manifestIdsPerRecord: 100,
-};
 
-// Get all objectIds saved in the remote manifest
-async function getRemoteObjectIds(indexManifestName) {
-  try {
-    const index = client.initIndex(indexManifestName);
-    const browser = index.browseAll({
-      attributesToRetrieve: 'content',
-      hitsPerPage: QUOTAS.manifestBrowseStep,
+const module = {
+  /**
+   * Add a unique objectID to all records
+   * @param {Array} inputRecords Array of records to update
+   * @returns {Array} Updated list of records
+   **/
+  addUniqueObjectIdsToRecords(inputRecords) {
+    const hashObject = nodeObjectHash().hash;
+    const records = _.map(inputRecords, record => {
+      const newRecord = _.omit(record, 'objectID');
+      newRecord.objectID = hashObject(newRecord);
+      return newRecord;
     });
-    let objectIDs = [];
 
-    // Return a promise, but only resolve it when we get to the end of the
-    // browse. At each step, we save the list of objectIDs saved in the
-    // manifest.
-    return await new Promise((resolve, reject) => {
-      browser.on('result', results => {
-        _.each(results.hits, hit => {
-          objectIDs = _.concat(objectIDs, hit.content);
-        });
-      });
-      browser.on('end', () => {
-        resolve(objectIDs);
-      });
-      browser.on('error', reject);
-    });
-  } catch (err) {
-    // Index does not (yet) exists
-    return [];
+    return records;
+  },
+
+  // TODO: getRemoteObjectIds
+  // Should be split into a more generic function in client. browseAll, should
+  // return all the records by browsing them and returning an array of records
+
+  async run(inputRecords, settings, credentials) {
+    const appId = _.get(credentials, 'appId');
+    const apiKey = _.get(credentials, 'apiKey');
+    client.init(appId, apiKey);
+
+    const indexName = _.get(credentials, 'indexName');
+    const indexTmpName = `${indexName}_tmp`;
+    const indexManifestName = `${indexName}_manifest`;
+    const indexManifestTmpName = `${indexName}_manifest_tmp`;
+
+    try {
+      // Add unique objectID to each local record
+      const records = this.addUniqueObjectIdsToRecords(inputRecords);
+
+      // What records are already in the app?
+      const remoteIds = await getRemoteObjectIds(indexManifestName);
+
+      // Add unique objectId to all records
+
+      // Create a tmp copy of the prod index to add our changes
+      await client.copyIndexSync(indexName, indexTmpName);
+
+      // Update settings
+      await client.setSettingsSync(indexTmpName, settings);
+
+      // Apply the diff between local and remote on the temp index
+      const diffBatch = buildDiffBatch(remoteIds, records, indexTmpName);
+      await client.runBatchSync(diffBatch);
+
+      // Preparing a new manifest index
+      await client.clearIndexSync(indexManifestTmpName);
+      const manifestBatch = buildManifestBatch(records, indexManifestTmpName);
+      await client.runBatchSync(manifestBatch);
+
+      // Overwriting production indexes with temporary indexes
+      await pAll([
+        async () => {
+          await client.moveIndexSync(indexManifestTmpName, indexManifestName);
+        },
+        async () => {
+          await client.moveIndexSync(indexTmpName, indexName);
+        },
+      ]);
+    } catch (err) {
+      console.info(err);
+      console.info('Unable to update records');
+    }
   }
 }
 
-// Add a unique objectID to all records
-function addUniqueObjectIdsToRecords(inputRecords) {
-  const hashObject = nodeObjectHash().hash;
-  const records = _.map(inputRecords, record => {
-    const newRecord = _.omit(record, 'objectID');
-    newRecord.objectID = hashObject(newRecord);
-    return newRecord;
-  });
+export default _.bindAll(module, _.functions(module));
 
-  return records;
-}
 
-// Get all the local objectID from a record array
-function getLocalObjectIds(records) {
-  return _.map(records, 'objectID');
-}
+// const QUOTAS = {
+//   manifestBrowseStep: 1000,
+//   manifestIdsPerRecord: 100,
+// };
 
-// Build the array of operations to send to create the diff between remoteIds
-// and local records
-function buildDiffBatch(remoteIds, records, indexName) {
-  const localIds = getLocalObjectIds(records);
+// // Get all objectIds saved in the remote manifest
+// async function getRemoteObjectIds(indexManifestName) {
+//   try {
+//     const index = client.initIndex(indexManifestName);
+//     const browser = index.browseAll({
+//       attributesToRetrieve: 'content',
+//       hitsPerPage: QUOTAS.manifestBrowseStep,
+//     });
+//     let objectIDs = [];
 
-  const idsToDelete = _.difference(remoteIds, localIds);
-  const idsToAdd = _.difference(localIds, remoteIds);
-  const recordsById = _.keyBy(records, 'objectID');
+//     // Return a promise, but only resolve it when we get to the end of the
+//     // browse. At each step, we save the list of objectIDs saved in the
+//     // manifest.
+//     return await new Promise((resolve, reject) => {
+//       browser.on('result', results => {
+//         _.each(results.hits, hit => {
+//           objectIDs = _.concat(objectIDs, hit.content);
+//         });
+//       });
+//       browser.on('end', () => {
+//         resolve(objectIDs);
+//       });
+//       browser.on('error', reject);
+//     });
+//   } catch (err) {
+//     // Index does not (yet) exists
+//     return [];
+//   }
+// }
 
-  const deleteBatch = _.map(idsToDelete, objectID => ({
-    action: 'deleteObject',
-    indexName,
-    body: {
-      objectID,
-    },
-  }));
-  const addBatch = _.map(idsToAdd, objectID => ({
-    action: 'addObject',
-    indexName,
-    body: recordsById[objectID],
-  }));
-  console.info(`${deleteBatch.length} objects to delete`);
-  console.info(`${addBatch.length} objects to add`);
 
-  return _.concat(deleteBatch, addBatch);
-}
+// // Get all the local objectID from a record array
+// function getLocalObjectIds(records) {
+//   return _.map(records, 'objectID');
+// }
 
-// Build the array of operations to add all objectIds to the manifest index
-function buildManifestBatch(records, indexName) {
-  const objectIds = getLocalObjectIds(records);
-  const chunks = _.chunk(objectIds, QUOTAS.manifestIdsPerRecord);
+// // Build the array of operations to send to create the diff between remoteIds
+// // and local records
+// function buildDiffBatch(remoteIds, records, indexName) {
+//   const localIds = getLocalObjectIds(records);
 
-  return _.map(chunks, chunk => ({
-    action: 'addObject',
-    indexName,
-    body: {
-      content: chunk,
-    },
-  }));
-}
+//   const idsToDelete = _.difference(remoteIds, localIds);
+//   const idsToAdd = _.difference(localIds, remoteIds);
+//   const recordsById = _.keyBy(records, 'objectID');
 
-const fullAtomic = async function(inputRecords, settings, credentials) {
-  const appId = _.get(credentials, 'appId');
-  const apiKey = _.get(credentials, 'apiKey');
-  client.init(appId, apiKey);
+//   const deleteBatch = _.map(idsToDelete, objectID => ({
+//     action: 'deleteObject',
+//     indexName,
+//     body: {
+//       objectID,
+//     },
+//   }));
+//   const addBatch = _.map(idsToAdd, objectID => ({
+//     action: 'addObject',
+//     indexName,
+//     body: recordsById[objectID],
+//   }));
+//   console.info(`${deleteBatch.length} objects to delete`);
+//   console.info(`${addBatch.length} objects to add`);
 
-  const indexName = _.get(credentials, 'indexName');
-  const indexTmpName = `${indexName}_tmp`;
-  const indexManifestName = `${indexName}_manifest`;
-  const indexManifestTmpName = `${indexName}_manifest_tmp`;
+//   return _.concat(deleteBatch, addBatch);
+// }
 
-  try {
-    // Add unique objectID to each local record
-    const records = addUniqueObjectIdsToRecords(inputRecords);
+// // Build the array of operations to add all objectIds to the manifest index
+// function buildManifestBatch(records, indexName) {
+//   const objectIds = getLocalObjectIds(records);
+//   const chunks = _.chunk(objectIds, QUOTAS.manifestIdsPerRecord);
 
-    // What records are already in the app?
-    const remoteIds = await getRemoteObjectIds(indexManifestName);
+//   return _.map(chunks, chunk => ({
+//     action: 'addObject',
+//     indexName,
+//     body: {
+//       content: chunk,
+//     },
+//   }));
+// }
 
-    // Add unique objectId to all records
+// const fullAtomic = async function(inputRecords, settings, credentials) {
+//   const appId = _.get(credentials, 'appId');
+//   const apiKey = _.get(credentials, 'apiKey');
+//   client.init(appId, apiKey);
 
-    // Create a tmp copy of the prod index to add our changes
-    await client.copyIndexSync(indexName, indexTmpName);
+//   const indexName = _.get(credentials, 'indexName');
+//   const indexTmpName = `${indexName}_tmp`;
+//   const indexManifestName = `${indexName}_manifest`;
+//   const indexManifestTmpName = `${indexName}_manifest_tmp`;
 
-    // Update settings
-    await client.setSettingsSync(indexTmpName, settings);
+//   try {
+//     // Add unique objectID to each local record
+//     const records = addUniqueObjectIdsToRecords(inputRecords);
 
-    // Apply the diff between local and remote on the temp index
-    const diffBatch = buildDiffBatch(remoteIds, records, indexTmpName);
-    await client.runBatchSync(diffBatch);
+//     // What records are already in the app?
+//     const remoteIds = await getRemoteObjectIds(indexManifestName);
 
-    // Preparing a new manifest index
-    await client.clearIndexSync(indexManifestTmpName);
-    const manifestBatch = buildManifestBatch(records, indexManifestTmpName);
-    await client.runBatchSync(manifestBatch);
+//     // Add unique objectId to all records
 
-    // Overwriting production indexes with temporary indexes
-    await pAll([
-      async () => {
-        await client.moveIndexSync(indexManifestTmpName, indexManifestName);
-      },
-      async () => {
-        await client.moveIndexSync(indexTmpName, indexName);
-      },
-    ]);
-  } catch (err) {
-    console.info(err);
-    console.info('Unable to update records');
-  }
-};
+//     // Create a tmp copy of the prod index to add our changes
+//     await client.copyIndexSync(indexName, indexTmpName);
 
-export default fullAtomic;
+//     // Update settings
+//     await client.setSettingsSync(indexTmpName, settings);
+
+//     // Apply the diff between local and remote on the temp index
+//     const diffBatch = buildDiffBatch(remoteIds, records, indexTmpName);
+//     await client.runBatchSync(diffBatch);
+
+//     // Preparing a new manifest index
+//     await client.clearIndexSync(indexManifestTmpName);
+//     const manifestBatch = buildManifestBatch(records, indexManifestTmpName);
+//     await client.runBatchSync(manifestBatch);
+
+//     // Overwriting production indexes with temporary indexes
+//     await pAll([
+//       async () => {
+//         await client.moveIndexSync(indexManifestTmpName, indexManifestName);
+//       },
+//       async () => {
+//         await client.moveIndexSync(indexTmpName, indexName);
+//       },
+//     ]);
+//   } catch (err) {
+//     console.info(err);
+//     console.info('Unable to update records');
+//   }
+// };
+
+// export default fullAtomic;

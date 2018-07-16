@@ -1,6 +1,5 @@
 import algoliasearch from 'algoliasearch';
 import _ from 'lodash';
-import chalk from 'chalk';
 import pMap from 'p-map';
 import pulse from './pulse';
 
@@ -88,13 +87,14 @@ const module = {
    * @returns {Void}
    **/
   async setSettingsSync(indexName, settings) {
-    console.info(`Update settings on ${indexName}`);
+    pulse.emit('setSettings:start', { indexName, settings });
     try {
       const index = this.initIndex(indexName);
       const response = await index.setSettings(settings);
       await index.waitTask(response.taskID);
+      pulse.emit('setSettings:end', { indexName, settings });
     } catch (err) {
-      errorHandler(err, `Unable to set settings to ${indexName}`);
+      pulse.emit('error', `Unable to set settings to ${indexName}`);
     }
   },
 
@@ -113,6 +113,48 @@ const module = {
       return false;
     }
   },
+
+  /**
+   * Get the list of all records from an index
+   * @param {String} indexName Name of the index
+   * @param {Object} userOptions Options to pass to the browseAll call
+   * @returns {Array} List of all records
+   **/
+  async getAllRecords(indexName, userOptions = {}) {
+    pulse.emit('getAllRecords:start', { indexName });
+    const options = {
+      ...userOptions,
+      hitsPerPage: 1000,
+    };
+    try {
+      const index = this.initIndex(indexName);
+      const browser = index.browseAll(options);
+      const records = [];
+
+      // Paginate through each page of browser and only resolve once we hit the
+      // end
+      return await new Promise((resolve, reject) => {
+        let page = 1;
+        browser.on('result', results => {
+          pulse.emit('getAllRecords:page', { indexName, page });
+          page++;
+          records.push(results);
+        });
+        browser.on('end', () => {
+          pulse.emit('getAllRecords:end', { indexName });
+          resolve(_.flatten(records));
+        });
+        browser.on('error', reject);
+      });
+    } catch (err) {
+      // Index does not (yet) exists
+      return [];
+    }
+  },
+
+  // // Get all objectIds saved in the remote manifest
+  // async function getRemoteObjectIds(indexManifestName) {
+  // }
 
   /**
    * Run a set of batch operations and wait until they finish.
@@ -157,24 +199,6 @@ const module = {
       { concurrency: options.concurrency }
     );
     pulse.emit('batch:end');
-  },
-
-  /**
-   * Display error messages
-   * @param {Object} err The error object as thrown
-   * @param {String} customMessage A custom message to display instead of the
-   * error
-   * @returns {Void}
-   **/
-  errorHandler(err, customMessage) {
-    // console.error(err);
-    if (customMessage) {
-      console.error(chalk.bold.red(customMessage));
-    }
-    if (err.message) {
-      console.error(chalk.red(err.message));
-    }
-    throw new Error(customMessage || err.message || err);
   },
 };
 
