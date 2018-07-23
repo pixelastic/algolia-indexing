@@ -10,11 +10,11 @@ based on your needs.
 ```javascript
 import indexing from 'algolia-indexing';
 
+const credentials = { appId: 'XXX', apiKey: 'YYY' }
 const records = [{foo: 'bar'}];
 const settings = { searchableAttributes: ['foo'] };
-const credentials = { appId: 'XXX', apiKey: 'YYY' }
 
-indexing.fullAtomic(records, settings, credentials);
+indexing.fullAtomic(credentials, records, settings);
 ```
 
 This mode will update an index with new records and settings in an **atomic**
