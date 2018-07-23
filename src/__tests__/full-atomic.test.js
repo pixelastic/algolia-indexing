@@ -64,4 +64,116 @@ describe('full-atomic', () => {
       expect(actual).toEqual([]);
     });
   });
+
+  describe('getLocalObjectIds', () => {
+    it('should get an empty array if no records', () => {
+      const input = [];
+
+      const actual = module.getLocalObjectIds(input);
+
+      expect(actual).toEqual([]);
+    });
+    it('should get the list of object ids from the records', () => {
+      const input = [{ objectID: 'foo' }, { objectID: 'bar' }];
+
+      const actual = module.getLocalObjectIds(input);
+
+      expect(actual).toEqual(['foo', 'bar']);
+    });
+  });
+
+  describe('buildDiffBatch', () => {
+    it('should delete all remote records if no local records', () => {
+      const remoteIds = ['foo'];
+      const records = [];
+      const actual = module.buildDiffBatch(remoteIds, records, 'my_index');
+
+      expect(actual).toEqual([
+        {
+          action: 'deleteObject',
+          indexName: 'my_index',
+          body: {
+            objectID: 'foo',
+          },
+        },
+      ]);
+    });
+    it('should add all local records if no local records', () => {
+      const remoteIds = [];
+      const records = [{ foo: 'bar' }];
+      const actual = module.buildDiffBatch(remoteIds, records, 'my_index');
+
+      expect(actual).toEqual([
+        {
+          action: 'addObject',
+          indexName: 'my_index',
+          body: { foo: 'bar' },
+        },
+      ]);
+    });
+    it('should delete then add if mix of local and remotes', () => {
+      const remoteIds = ['foo', 'bar'];
+      const records = [
+        { name: 'foo', objectID: 'foo' },
+        { name: 'baz', objectID: 'baz' },
+      ];
+      const actual = module.buildDiffBatch(remoteIds, records, 'my_index');
+
+      expect(actual).toEqual([
+        {
+          action: 'deleteObject',
+          indexName: 'my_index',
+          body: {
+            objectID: 'bar',
+          },
+        },
+        {
+          action: 'addObject',
+          indexName: 'my_index',
+          body: { name: 'baz', objectID: 'baz' },
+        },
+      ]);
+    });
+  });
+
+  describe('buildManifestBatch', () => {
+    it('should return a batch of all object ids ', () => {
+      const input = [{ objectID: 'foo' }, { objectID: 'bar' }];
+
+      const actual = module.buildManifestBatch(input, 'my_index');
+
+      expect(actual).toEqual([
+        {
+          action: 'addObject',
+          indexName: 'my_index',
+          body: {
+            content: ['foo', 'bar'],
+          },
+        },
+      ]);
+    });
+    it('should limit the number of ids per record', () => {
+      mock('manifestIdsPerRecord', 1);
+      const input = [{ objectID: 'foo' }, { objectID: 'bar' }];
+
+      const actual = module.buildManifestBatch(input, 'my_index');
+
+      expect(actual).toEqual([
+        {
+          action: 'addObject',
+          indexName: 'my_index',
+          body: {
+            content: ['foo'],
+          },
+        },
+        {
+          action: 'addObject',
+          indexName: 'my_index',
+          body: {
+            content: ['bar'],
+          },
+        },
+      ]);
+    });
+  });
 });
