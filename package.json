@@ -12,7 +12,8 @@
     "test": "./scripts/test",
     "test:watch": "./scripts/test-watch",
     "lint": "./scripts/lint",
-    "build": "./scripts/build"
+    "build": "./scripts/build",
+    "run": "babel-node ./run.js"
   },
   "dependencies": {
     "algoliasearch": "3.24.8",

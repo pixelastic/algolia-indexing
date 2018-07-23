@@ -1,12 +1,14 @@
-import algoliaIndexing from './src/index.js';
+import indexing from './src/index.js';
 
-const credentials = { appId: 'XXX', apiKey: 'YYY' };
-const indexing = algoliaIndexing(credentials);
+(async function() {
+  const credentials = {
+    appId: process.env.ALGOLIA_APP_ID,
+    apiKey: process.env.ALGOLIA_API_KEY,
+    indexName: 'algolia_indexing',
+  };
+  const records = [{ foo: 'bar' }];
+  const settings = {};
 
-indexing.fullAtomic();
-console.info(indexing.fullAtomic.internals);
-
-
-// const records = [{ foo: 'bar' }];
-// const settings = { bar: 'baz'}
-// indexing.fullAtomic(records, settings, 'my_index');
+  await indexing.fullAtomic(credentials, records, settings);
+  console.info('done');
+})();
