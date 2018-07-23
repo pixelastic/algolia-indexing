@@ -18,6 +18,7 @@ describe('client', () => {
   };
   const mockClient = {
     copyIndex: jest.fn(),
+    moveIndex: jest.fn(),
     initIndex: jest.fn(),
     batch: jest.fn(),
   };
@@ -106,6 +107,10 @@ describe('client', () => {
         await module.copyIndexSync('foo', 'bar');
 
         expect(mockIndex.setSettings).toHaveBeenCalledWith({});
+        expect(pulse.emit).toHaveBeenCalledWith('copyIndex:end', {
+          source: 'foo',
+          destination: 'bar',
+        });
       });
     });
 
@@ -145,6 +150,64 @@ describe('client', () => {
         });
 
         await module.copyIndexSync('foo', 'bar');
+
+        expect(pulse.emit).toHaveBeenCalledWith('error', anyString);
+      });
+    });
+  });
+
+  describe('moveIndexSync', () => {
+    describe('source does not exist', () => {
+      it('should create an empty index', async () => {
+        mock('indexExists', false);
+        mock('initIndex', mockIndex);
+
+        await module.moveIndexSync('foo', 'bar');
+
+        expect(mockIndex.setSettings).toHaveBeenCalledWith({});
+        expect(pulse.emit).toHaveBeenCalledWith('moveIndex:end', {
+          source: 'foo',
+          destination: 'bar',
+        });
+      });
+    });
+
+    describe('source exists', () => {
+      beforeEach(() => {
+        mock('indexExists').mockReturnValue(true);
+      });
+
+      it('should wait for the waitTask to complete', async () => {
+        mockClient.moveIndex.mockReturnValue({ taskID: 1234 });
+        mock('initIndex', mockIndex);
+
+        await module.moveIndexSync('foo', 'bar');
+
+        expect(mockIndex.waitTask).toHaveBeenCalledWith(1234);
+      });
+
+      it('should emit a start and end event', async () => {
+        mockClient.moveIndex.mockReturnValue({ taskID: 1234 });
+        mock('initIndex', mockIndex);
+
+        await module.moveIndexSync('foo', 'bar');
+
+        expect(pulse.emit).toHaveBeenCalledWith('moveIndex:start', {
+          source: 'foo',
+          destination: 'bar',
+        });
+        expect(pulse.emit).toHaveBeenCalledWith('moveIndex:end', {
+          source: 'foo',
+          destination: 'bar',
+        });
+      });
+
+      it('should emit an error', async () => {
+        mockClient.moveIndex.mockImplementation(() => {
+          throw new Error();
+        });
+
+        await module.moveIndexSync('foo', 'bar');
 
         expect(pulse.emit).toHaveBeenCalledWith('error', anyString);
       });

@@ -81,6 +81,30 @@ const module = {
   },
 
   /**
+   * Rename an existing index
+   * @param {String} source Name of the source index
+   * @param {String} destination Name of the destination index
+   * @returns {Promise} Wait for the index to be renamed
+   **/
+  async moveIndexSync(source, destination) {
+    pulse.emit('moveIndex:start', { source, destination });
+    // If the source index does not exist, we simply create a new one. We can't copy an
+    // empty index because we won't be able to wait for the task to finish.
+    if (!await this.indexExists(source)) {
+      await this.initIndex(source).setSettings({});
+      pulse.emit('moveIndex:end', { source, destination });
+      return;
+    }
+    try {
+      const response = await this.client.moveIndex(source, destination);
+      await this.initIndex(source).waitTask(response.taskID);
+      pulse.emit('moveIndex:end', { source, destination });
+    } catch (err) {
+      pulse.emit('error', `Unable to move index ${source} to ${destination}`);
+    }
+  },
+
+  /**
    * Set settings to an index
    * @param {String} indexName Name of the index
    * @param {Object} settings Settings of the index
