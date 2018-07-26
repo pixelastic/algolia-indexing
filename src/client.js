@@ -163,7 +163,12 @@ const module = {
    **/
   async getAllRecords(indexName, userOptions = {}) {
     const eventId = uuid();
-    pulse.emit('getAllRecords:start', { eventId, indexName });
+    pulse.emit('getAllRecords:start', {
+      eventId,
+      indexName,
+      currentPage: 1,
+      maxPages: '?',
+    });
     const options = {
       ...userOptions,
       hitsPerPage: 1000,
@@ -176,10 +181,15 @@ const module = {
       // Paginate through each page of browser and only resolve once we hit the
       // end
       return await new Promise((resolve, reject) => {
-        let page = 1;
         browser.on('result', results => {
-          pulse.emit('getAllRecords:page', { eventId, indexName, page });
-          page++;
+          const currentPage = results.page + 1;
+          const maxPages = results.nbPages;
+          pulse.emit('getAllRecords:page', {
+            eventId,
+            indexName,
+            currentPage,
+            maxPages,
+          });
           records.push(results.hits);
         });
         browser.on('end', () => {
@@ -206,6 +216,9 @@ const module = {
    * resolving. It will also chunk large batches into smaller batches.
    **/
   async runBatchSync(batches, userOptions = {}) {
+    if (_.isEmpty(batches)) {
+      return;
+    }
     const options = {
       batchSize: this.QUOTAS.batchMaxSize,
       concurrency: this.QUOTAS.batchMaxConcurrency,
@@ -213,11 +226,14 @@ const module = {
     };
     const chunks = _.chunk(batches, options.batchSize);
 
+    const maxOperationCount = batches.length;
+    const operationsCountPerBatch = options.batchSize;
+    let currentOperationCount = 0;
     const eventId = uuid();
     pulse.emit('batch:start', {
       eventId,
-      batchCount: batches.length,
-      batchSize: options.batchSize,
+      maxOperationCount,
+      currentOperationCount,
     });
     await pMap(
       chunks,
@@ -231,7 +247,12 @@ const module = {
             const taskID = taskIDPerIndex[indexName];
             await this.initIndex(indexName).waitTask(taskID);
           });
-          pulse.emit('batch:chunk', { eventId, chunkSize: chunk.length });
+          currentOperationCount += chunk.length;
+          pulse.emit('batch:chunk', {
+            eventId,
+            maxOperationCount,
+            currentOperationCount,
+          });
         } catch (err) {
           pulse.emit('error', {
             eventId,

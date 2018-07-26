@@ -9,7 +9,7 @@ import indexing from './src/index.js';
   const records = [{ foo: 'bar' }];
   const settings = {};
 
-  indexing.onAny(console.info);
+  indexing.verbose();
 
   await indexing.fullAtomic(credentials, records, settings);
 })();

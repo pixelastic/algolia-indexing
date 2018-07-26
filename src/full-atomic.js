@@ -1,6 +1,5 @@
 import _ from 'lodash';
 import nodeObjectHash from 'node-object-hash';
-import pAll from 'p-all';
 import client from './client';
 
 const module = {
@@ -126,14 +125,8 @@ const module = {
       await client.runBatchSync(manifestBatch);
 
       // Overwriting production indexes with temporary indexes
-      await pAll([
-        async () => {
-          await client.moveIndexSync(indexManifestTmpName, indexManifestName);
-        },
-        async () => {
-          await client.moveIndexSync(indexTmpName, indexName);
-        },
-      ]);
+      await client.moveIndexSync(indexManifestTmpName, indexManifestName);
+      await client.moveIndexSync(indexTmpName, indexName);
     } catch (err) {
       console.info(err);
       console.info('Unable to update records');

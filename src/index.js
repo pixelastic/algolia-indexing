@@ -1,9 +1,9 @@
 import fullAtomic from './full-atomic';
-import _ from 'lodash';
-import pulse from './pulse';
+import progress from './progress';
 
 export default {
   fullAtomic: fullAtomic.run,
-  on: _.bind(pulse.on, pulse),
-  onAny: _.bind(pulse.onAny, pulse),
+  verbose() {
+    progress.enable();
+  },
 };
