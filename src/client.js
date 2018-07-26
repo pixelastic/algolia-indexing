@@ -1,5 +1,6 @@
 import algoliasearch from 'algoliasearch';
 import _ from 'lodash';
+import uuid from 'uuid/v1';
 import pMap from 'p-map';
 import pulse from './pulse';
 
@@ -45,14 +46,18 @@ const module = {
    * @returns {Void}
    **/
   async clearIndexSync(indexName) {
-    pulse.emit('clearIndex:start', indexName);
+    const eventId = uuid();
+    pulse.emit('clearIndex:start', { eventId, indexName });
     try {
       const index = this.initIndex(indexName);
       const response = await index.clearIndex();
       await index.waitTask(response.taskID);
-      pulse.emit('clearIndex:end', indexName);
+      pulse.emit('clearIndex:end', { eventId, indexName });
     } catch (err) {
-      pulse.emit('error', `Unable to clear index ${indexName}`);
+      pulse.emit('error', {
+        eventId,
+        message: `Unable to clear index ${indexName}`,
+      });
     }
   },
 
@@ -63,20 +68,24 @@ const module = {
    * @returns {Promise} Wait for the new index to be created
    **/
   async copyIndexSync(source, destination) {
-    pulse.emit('copyIndex:start', { source, destination });
+    const eventId = uuid();
+    pulse.emit('copyIndex:start', { eventId, source, destination });
     // If the source index does not exist, we simply create it. We can't copy an
     // empty index because we won't be able to wait for the task to finish.
     if (!await this.indexExists(source)) {
       await this.initIndex(source).setSettings({});
-      pulse.emit('copyIndex:end', { source, destination });
+      pulse.emit('copyIndex:end', { eventId, source, destination });
       return;
     }
     try {
       const response = await this.client.copyIndex(source, destination);
       await this.initIndex(source).waitTask(response.taskID);
-      pulse.emit('copyIndex:end', { source, destination });
+      pulse.emit('copyIndex:end', { eventId, source, destination });
     } catch (err) {
-      pulse.emit('error', `Unable to copy index ${source} to ${destination}`);
+      pulse.emit('error', {
+        eventId,
+        message: `Unable to copy index ${source} to ${destination}`,
+      });
     }
   },
 
@@ -87,20 +96,24 @@ const module = {
    * @returns {Promise} Wait for the index to be renamed
    **/
   async moveIndexSync(source, destination) {
-    pulse.emit('moveIndex:start', { source, destination });
+    const eventId = uuid();
+    pulse.emit('moveIndex:start', { eventId, source, destination });
     // If the source index does not exist, we simply create a new one. We can't copy an
     // empty index because we won't be able to wait for the task to finish.
     if (!await this.indexExists(source)) {
       await this.initIndex(source).setSettings({});
-      pulse.emit('moveIndex:end', { source, destination });
+      pulse.emit('moveIndex:end', { eventId, source, destination });
       return;
     }
     try {
       const response = await this.client.moveIndex(source, destination);
       await this.initIndex(source).waitTask(response.taskID);
-      pulse.emit('moveIndex:end', { source, destination });
+      pulse.emit('moveIndex:end', { eventId, source, destination });
     } catch (err) {
-      pulse.emit('error', `Unable to move index ${source} to ${destination}`);
+      pulse.emit('error', {
+        eventId,
+        message: `Unable to move index ${source} to ${destination}`,
+      });
     }
   },
 
@@ -111,14 +124,18 @@ const module = {
    * @returns {Void}
    **/
   async setSettingsSync(indexName, settings) {
-    pulse.emit('setSettings:start', { indexName, settings });
+    const eventId = uuid();
+    pulse.emit('setSettings:start', { eventId, indexName, settings });
     try {
       const index = this.initIndex(indexName);
       const response = await index.setSettings(settings);
       await index.waitTask(response.taskID);
-      pulse.emit('setSettings:end', { indexName, settings });
+      pulse.emit('setSettings:end', { eventId, indexName, settings });
     } catch (err) {
-      pulse.emit('error', `Unable to set settings to ${indexName}`);
+      pulse.emit('error', {
+        eventId,
+        message: `Unable to set settings to ${indexName}`,
+      });
     }
   },
 
@@ -145,7 +162,8 @@ const module = {
    * @returns {Array} List of all records
    **/
   async getAllRecords(indexName, userOptions = {}) {
-    pulse.emit('getAllRecords:start', { indexName });
+    const eventId = uuid();
+    pulse.emit('getAllRecords:start', { eventId, indexName });
     const options = {
       ...userOptions,
       hitsPerPage: 1000,
@@ -160,12 +178,12 @@ const module = {
       return await new Promise((resolve, reject) => {
         let page = 1;
         browser.on('result', results => {
-          pulse.emit('getAllRecords:page', { indexName, page });
+          pulse.emit('getAllRecords:page', { eventId, indexName, page });
           page++;
           records.push(results.hits);
         });
         browser.on('end', () => {
-          pulse.emit('getAllRecords:end', { indexName });
+          pulse.emit('getAllRecords:end', { eventId, indexName });
           resolve(_.flatten(records));
         });
         browser.on('error', reject);
@@ -195,7 +213,9 @@ const module = {
     };
     const chunks = _.chunk(batches, options.batchSize);
 
+    const eventId = uuid();
     pulse.emit('batch:start', {
+      eventId,
       batchCount: batches.length,
       batchSize: options.batchSize,
     });
@@ -211,14 +231,17 @@ const module = {
             const taskID = taskIDPerIndex[indexName];
             await this.initIndex(indexName).waitTask(taskID);
           });
-          pulse.emit('batch:chunk', { chunkSize: chunk.length });
+          pulse.emit('batch:chunk', { eventId, chunkSize: chunk.length });
         } catch (err) {
-          pulse.emit('error', `Unable to send batch #${index}`);
+          pulse.emit('error', {
+            eventId,
+            message: `Unable to send batch #${index}`,
+          });
         }
       },
       { concurrency: options.concurrency }
     );
-    pulse.emit('batch:end');
+    pulse.emit('batch:end', { eventId });
   },
 };
 

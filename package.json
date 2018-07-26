@@ -49,6 +49,7 @@
     "prompt": "^1.0.0",
     "semver": "^5.5.0",
     "shelljs": "^0.8.2",
+    "uuid": "^3.3.2",
     "webpack": "^4.16.2",
     "webpack-command": "^0.4.1"
   }
