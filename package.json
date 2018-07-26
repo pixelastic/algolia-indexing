@@ -9,10 +9,11 @@
     "build"
   ],
   "scripts": {
+    "lint": "./scripts/lint",
     "test": "./scripts/test",
     "test:watch": "./scripts/test-watch",
-    "lint": "./scripts/lint",
     "build": "./scripts/build",
+    "release": "babel-node ./scripts/release.js",
     "run": "babel-node ./run.js"
   },
   "dependencies": {
@@ -42,7 +43,12 @@
     "eslint-plugin-prettier": "^2.6.0",
     "eventemitter2": "^5.0.1",
     "jest": "^23.0.0",
+    "mversion": "^1.12.0",
+    "pify": "^3.0.0",
     "prettier": "1.9.2",
+    "prompt": "^1.0.0",
+    "semver": "^5.5.0",
+    "shelljs": "^0.8.2",
     "webpack": "^4.16.2",
     "webpack-command": "^0.4.1"
   }
