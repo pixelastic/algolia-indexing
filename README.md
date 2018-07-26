@@ -2,6 +2,8 @@
 
 This module will let you perform complex indexing operations with ease.
 
+_⚠ This is still a heavy WIP and beta version_
+
 It comes with three modes, each with their own pros and cons, for you to use
 based on your needs.
 
