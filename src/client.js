@@ -227,7 +227,6 @@ const module = {
     const chunks = _.chunk(batches, options.batchSize);
 
     const maxOperationCount = batches.length;
-    const operationsCountPerBatch = options.batchSize;
     let currentOperationCount = 0;
     const eventId = uuid();
     pulse.emit('batch:start', {

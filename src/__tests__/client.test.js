@@ -5,8 +5,11 @@ jest.mock('../pulse');
 import pulse from '../pulse';
 jest.mock('algoliasearch');
 import algoliasearch from 'algoliasearch';
+jest.mock('uuid/v1');
+import uuid from 'uuid/v1';
 import EventEmitter from 'events';
 const anyString = expect.any(String);
+const objectLike = expect.objectContaining;
 
 describe('client', () => {
   const mockIndex = {
@@ -77,11 +80,18 @@ describe('client', () => {
     it('should emit a start and end event', async () => {
       mock('initIndex', mockIndex);
       mockIndex.clearIndex.mockReturnValue({ taskID: 1234 });
+      uuid.mockReturnValue('baz');
 
       await module.clearIndexSync('indexName');
 
-      expect(pulse.emit).toHaveBeenCalledWith('clearIndex:start', 'indexName');
-      expect(pulse.emit).toHaveBeenCalledWith('clearIndex:end', 'indexName');
+      expect(pulse.emit).toHaveBeenCalledWith(
+        'clearIndex:start',
+        objectLike({ eventId: 'baz', indexName: 'indexName' })
+      );
+      expect(pulse.emit).toHaveBeenCalledWith(
+        'clearIndex:end',
+        objectLike({ eventId: 'baz', indexName: 'indexName' })
+      );
     });
 
     describe('on error', () => {
@@ -90,10 +100,17 @@ describe('client', () => {
         mockIndex.clearIndex.mockImplementation(() => {
           throw new Error();
         });
+        uuid.mockReturnValue('baz');
 
         await module.clearIndexSync('indexName');
 
-        expect(pulse.emit).toHaveBeenCalledWith('error', anyString);
+        expect(pulse.emit).toHaveBeenCalledWith(
+          'error',
+          objectLike({
+            eventId: 'baz',
+            message: anyString,
+          })
+        );
       });
     });
   });
@@ -107,10 +124,13 @@ describe('client', () => {
         await module.copyIndexSync('foo', 'bar');
 
         expect(mockIndex.setSettings).toHaveBeenCalledWith({});
-        expect(pulse.emit).toHaveBeenCalledWith('copyIndex:end', {
-          source: 'foo',
-          destination: 'bar',
-        });
+        expect(pulse.emit).toHaveBeenCalledWith(
+          'copyIndex:end',
+          objectLike({
+            source: 'foo',
+            destination: 'bar',
+          })
+        );
       });
     });
 
@@ -131,27 +151,43 @@ describe('client', () => {
       it('should emit a start and end event', async () => {
         mockClient.copyIndex.mockReturnValue({ taskID: 1234 });
         mock('initIndex', mockIndex);
+        uuid.mockReturnValue('baz');
 
         await module.copyIndexSync('foo', 'bar');
 
-        expect(pulse.emit).toHaveBeenCalledWith('copyIndex:start', {
-          source: 'foo',
-          destination: 'bar',
-        });
-        expect(pulse.emit).toHaveBeenCalledWith('copyIndex:end', {
-          source: 'foo',
-          destination: 'bar',
-        });
+        expect(pulse.emit).toHaveBeenCalledWith(
+          'copyIndex:start',
+          objectLike({
+            eventId: 'baz',
+            source: 'foo',
+            destination: 'bar',
+          })
+        );
+        expect(pulse.emit).toHaveBeenCalledWith(
+          'copyIndex:end',
+          objectLike({
+            eventId: 'baz',
+            source: 'foo',
+            destination: 'bar',
+          })
+        );
       });
 
       it('should emit an error', async () => {
         mockClient.copyIndex.mockImplementation(() => {
           throw new Error();
         });
+        uuid.mockReturnValue('baz');
 
         await module.copyIndexSync('foo', 'bar');
 
-        expect(pulse.emit).toHaveBeenCalledWith('error', anyString);
+        expect(pulse.emit).toHaveBeenCalledWith(
+          'error',
+          objectLike({
+            eventId: 'baz',
+            message: anyString,
+          })
+        );
       });
     });
   });
@@ -165,10 +201,13 @@ describe('client', () => {
         await module.moveIndexSync('foo', 'bar');
 
         expect(mockIndex.setSettings).toHaveBeenCalledWith({});
-        expect(pulse.emit).toHaveBeenCalledWith('moveIndex:end', {
-          source: 'foo',
-          destination: 'bar',
-        });
+        expect(pulse.emit).toHaveBeenCalledWith(
+          'moveIndex:end',
+          objectLike({
+            source: 'foo',
+            destination: 'bar',
+          })
+        );
       });
     });
 
@@ -189,27 +228,43 @@ describe('client', () => {
       it('should emit a start and end event', async () => {
         mockClient.moveIndex.mockReturnValue({ taskID: 1234 });
         mock('initIndex', mockIndex);
+        uuid.mockReturnValue('baz');
 
         await module.moveIndexSync('foo', 'bar');
 
-        expect(pulse.emit).toHaveBeenCalledWith('moveIndex:start', {
-          source: 'foo',
-          destination: 'bar',
-        });
-        expect(pulse.emit).toHaveBeenCalledWith('moveIndex:end', {
-          source: 'foo',
-          destination: 'bar',
-        });
+        expect(pulse.emit).toHaveBeenCalledWith(
+          'moveIndex:start',
+          objectLike({
+            eventId: 'baz',
+            source: 'foo',
+            destination: 'bar',
+          })
+        );
+        expect(pulse.emit).toHaveBeenCalledWith(
+          'moveIndex:end',
+          objectLike({
+            eventId: 'baz',
+            source: 'foo',
+            destination: 'bar',
+          })
+        );
       });
 
       it('should emit an error', async () => {
         mockClient.moveIndex.mockImplementation(() => {
           throw new Error();
         });
+        uuid.mockReturnValue('baz');
 
         await module.moveIndexSync('foo', 'bar');
 
-        expect(pulse.emit).toHaveBeenCalledWith('error', anyString);
+        expect(pulse.emit).toHaveBeenCalledWith(
+          'error',
+          objectLike({
+            eventId: 'baz',
+            message: anyString,
+          })
+        );
       });
     });
   });
@@ -227,17 +282,26 @@ describe('client', () => {
     it('should emit a start and end event', async () => {
       mock('initIndex', mockIndex);
       mockIndex.setSettings.mockReturnValue({});
+      uuid.mockReturnValue('baz');
 
       await module.setSettingsSync('indexName', { foo: 'bar' });
 
-      expect(pulse.emit).toHaveBeenCalledWith('setSettings:start', {
-        indexName: 'indexName',
-        settings: { foo: 'bar' },
-      });
-      expect(pulse.emit).toHaveBeenCalledWith('setSettings:end', {
-        indexName: 'indexName',
-        settings: { foo: 'bar' },
-      });
+      expect(pulse.emit).toHaveBeenCalledWith(
+        'setSettings:start',
+        objectLike({
+          eventId: 'baz',
+          indexName: 'indexName',
+          settings: { foo: 'bar' },
+        })
+      );
+      expect(pulse.emit).toHaveBeenCalledWith(
+        'setSettings:end',
+        objectLike({
+          eventId: 'baz',
+          indexName: 'indexName',
+          settings: { foo: 'bar' },
+        })
+      );
     });
 
     describe('on error', () => {
@@ -246,10 +310,17 @@ describe('client', () => {
         mockIndex.setSettings.mockImplementation(() => {
           throw new Error();
         });
+        uuid.mockReturnValue('baz');
 
         await module.setSettingsSync('indexName');
 
-        expect(pulse.emit).toHaveBeenCalledWith('error', anyString);
+        expect(pulse.emit).toHaveBeenCalledWith(
+          'error',
+          objectLike({
+            eventId: 'baz',
+            message: anyString,
+          })
+        );
       });
     });
   });
@@ -308,41 +379,80 @@ describe('client', () => {
       expect(mockIndex.waitTask).toHaveBeenCalledWith(5678);
     });
 
+    it('does nothing if no operations to batch', async () => {
+      const batches = [];
+      const userOptions = {};
+
+      await module.runBatchSync(batches, userOptions);
+
+      expect(pulse.emit).not.toHaveBeenCalled();
+    });
+
     it('emits an error if cannot batch', async () => {
       const batches = ['foo', 'bar', 'baz'];
       const userOptions = { batchSize: 1 };
       mockClient.batch.mockImplementation(() => {
         throw new Error();
       });
+      uuid.mockReturnValue('baz');
 
       await module.runBatchSync(batches, userOptions);
 
-      expect(pulse.emit).toHaveBeenCalledWith('error', anyString);
+      expect(pulse.emit).toHaveBeenCalledWith(
+        'error',
+        objectLike({
+          eventId: 'baz',
+          message: anyString,
+        })
+      );
     });
 
     it('emits a start and end event', async () => {
       const batches = ['foo', 'bar', 'baz'];
       const userOptions = { batchSize: 1 };
       mockClient.batch.mockReturnValue({ taskID: {} });
+      uuid.mockReturnValue('baz');
 
       await module.runBatchSync(batches, userOptions);
 
-      expect(pulse.emit).toHaveBeenCalledWith('batch:start', {
-        batchCount: 3,
-        batchSize: 1,
-      });
-      expect(pulse.emit).toHaveBeenCalledWith('batch:end');
+      expect(pulse.emit).toHaveBeenCalledWith(
+        'batch:start',
+        objectLike({
+          eventId: 'baz',
+          maxOperationCount: 3,
+          currentOperationCount: 0,
+        })
+      );
+      expect(pulse.emit).toHaveBeenCalledWith(
+        'batch:end',
+        objectLike({ eventId: 'baz' })
+      );
     });
 
     it('emits chunk events', async () => {
       const batches = ['foo', 'bar', 'baz'];
       const userOptions = { batchSize: 2 };
       mockClient.batch.mockReturnValue({ taskID: {} });
+      uuid.mockReturnValue('baz');
 
       await module.runBatchSync(batches, userOptions);
 
-      expect(pulse.emit).toHaveBeenCalledWith('batch:chunk', { chunkSize: 2 });
-      expect(pulse.emit).toHaveBeenCalledWith('batch:chunk', { chunkSize: 1 });
+      expect(pulse.emit).toHaveBeenCalledWith(
+        'batch:chunk',
+        objectLike({
+          eventId: 'baz',
+          maxOperationCount: 3,
+          currentOperationCount: 2,
+        })
+      );
+      expect(pulse.emit).toHaveBeenCalledWith(
+        'batch:chunk',
+        objectLike({
+          eventId: 'baz',
+          maxOperationCount: 3,
+          currentOperationCount: 3,
+        })
+      );
     });
   });
 
@@ -405,14 +515,25 @@ describe('client', () => {
 
     it('should emit start/stop events', () => {
       expect.assertions(2);
+      uuid.mockReturnValue('baz');
 
       const actual = module.getAllRecords('my_index').then(() => {
-        expect(pulse.emit).toHaveBeenCalledWith('getAllRecords:start', {
-          indexName: 'my_index',
-        });
-        expect(pulse.emit).toHaveBeenCalledWith('getAllRecords:end', {
-          indexName: 'my_index',
-        });
+        expect(pulse.emit).toHaveBeenCalledWith(
+          'getAllRecords:start',
+          objectLike({
+            eventId: 'baz',
+            indexName: 'my_index',
+            currentPage: 1,
+            maxPages: '?',
+          })
+        );
+        expect(pulse.emit).toHaveBeenCalledWith(
+          'getAllRecords:end',
+          objectLike({
+            eventId: 'baz',
+            indexName: 'my_index',
+          })
+        );
       });
 
       browser.emit('end');
@@ -422,25 +543,32 @@ describe('client', () => {
 
     it('should emit page events', () => {
       expect.assertions(2);
+      uuid.mockReturnValue('baz');
 
       const actual = module.getAllRecords('my_index').then(() => {
         expect(pulse.emit).toHaveBeenCalledWith(
           'getAllRecords:page',
-          expect.objectContaining({
-            page: 1,
+          objectLike({
+            eventId: 'baz',
+            indexName: 'my_index',
+            currentPage: 1,
+            maxPages: 2,
           })
         );
         expect(pulse.emit).toHaveBeenCalledWith(
           'getAllRecords:page',
-          expect.objectContaining({
-            page: 2,
+          objectLike({
+            eventId: 'baz',
+            indexName: 'my_index',
+            currentPage: 2,
+            maxPages: 2,
           })
         );
       });
 
       // Paginate twice, then stop
-      browser.emit('result', { hits: [] });
-      browser.emit('result', { hits: [] });
+      browser.emit('result', { page: 0, nbPages: 2, hits: [] });
+      browser.emit('result', { page: 1, nbPages: 2, hits: [] });
       browser.emit('end');
 
       return actual;
