@@ -162,7 +162,7 @@ const module = {
         browser.on('result', results => {
           pulse.emit('getAllRecords:page', { indexName, page });
           page++;
-          records.push(results);
+          records.push(results.hits);
         });
         browser.on('end', () => {
           pulse.emit('getAllRecords:end', { indexName });

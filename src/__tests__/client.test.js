@@ -362,8 +362,8 @@ describe('client', () => {
       });
 
       // Paginate twice, then stop
-      browser.emit('result', ['foo']);
-      browser.emit('result', ['bar']);
+      browser.emit('result', { hits: ['foo'] });
+      browser.emit('result', { hits: ['bar'] });
       browser.emit('end');
 
       return actual;
@@ -439,8 +439,8 @@ describe('client', () => {
       });
 
       // Paginate twice, then stop
-      browser.emit('result');
-      browser.emit('result');
+      browser.emit('result', { hits: [] });
+      browser.emit('result', { hits: [] });
       browser.emit('end');
 
       return actual;

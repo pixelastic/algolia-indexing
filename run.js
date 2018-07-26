@@ -9,6 +9,7 @@ import indexing from './src/index.js';
   const records = [{ foo: 'bar' }];
   const settings = {};
 
+  indexing.onAny(console.info);
+
   await indexing.fullAtomic(credentials, records, settings);
-  console.info('done');
 })();
