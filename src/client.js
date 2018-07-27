@@ -3,12 +3,9 @@ import _ from 'lodash';
 import uuid from 'uuid/v1';
 import pMap from 'p-map';
 import pulse from './pulse';
+import config from './config';
 
 const module = {
-  QUOTAS: {
-    batchMaxSize: 1000,
-    batchMaxConcurrency: 10,
-  },
   client: null,
   indexes: null,
 
@@ -180,7 +177,7 @@ const module = {
 
       // Paginate through each page of browser and only resolve once we hit the
       // end
-      return await new Promise((resolve, reject) => {
+      return await new Promise(resolve => {
         browser.on('result', results => {
           const currentPage = results.page + 1;
           const maxPages = results.nbPages;
@@ -196,10 +193,14 @@ const module = {
           pulse.emit('getAllRecords:end', { eventId, indexName });
           resolve(_.flatten(records));
         });
-        browser.on('error', reject);
+        // Index does not exists
+        browser.on('error', () => {
+          pulse.emit('getAllRecords:end', { eventId, indexName });
+          resolve([]);
+        });
       });
     } catch (err) {
-      // Index does not (yet) exists
+      pulse.emit('getAllRecords:end', { eventId, indexName });
       return [];
     }
   },
@@ -220,8 +221,8 @@ const module = {
       return;
     }
     const options = {
-      batchSize: this.QUOTAS.batchMaxSize,
-      concurrency: this.QUOTAS.batchMaxConcurrency,
+      batchSize: config.read('batchMaxSize'),
+      concurrency: config.read('batchMaxConcurrency'),
       ...userOptions,
     };
     const chunks = _.chunk(batches, options.batchSize);
@@ -236,7 +237,7 @@ const module = {
     });
     await pMap(
       chunks,
-      async (chunk, index) => {
+      async chunk => {
         try {
           const response = await this.client.batch(chunk);
 
@@ -253,9 +254,12 @@ const module = {
             currentOperationCount,
           });
         } catch (err) {
+          const message = `Unable to process batch\n${err.name}\n${
+            err.message
+          }`;
           pulse.emit('error', {
             eventId,
-            message: `Unable to send batch #${index}`,
+            message,
           });
         }
       },

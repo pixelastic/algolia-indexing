@@ -18,6 +18,10 @@ export default {
   succeedEvent(data) {
     this.spinners[data.eventId].succeed();
   },
+  error(data) {
+    this.spinners[data.eventId].fail(chalk.red(data.message));
+    process.exit(1); // eslint-disable-line no-process-exit
+  },
 
   /* eslint-disable no-param-reassign */
   onCopyIndexStart(data) {
@@ -45,9 +49,12 @@ export default {
     );
   },
   onGetAllRecordsStart(data) {
+    const current = data.currentPage;
+    const max = data.maxPages;
+    const indexName = this.color(data.indexName);
     this.startSpinner(
       data.eventId,
-      `Getting all objectIds from ${this.color(data.indexName)}`
+      `Getting all objectIds from ${indexName} [page ${current}/${max}]`
     );
   },
   onGetAllRecordsPage(data) {
@@ -95,5 +102,7 @@ export default {
 
     pulse.on('setSettings:start', _.bind(this.onSetSettingsStart, this));
     pulse.on('setSettings:end', _.bind(this.succeedEvent, this));
+
+    pulse.on('error', _.bind(this.error, this));
   },
 };

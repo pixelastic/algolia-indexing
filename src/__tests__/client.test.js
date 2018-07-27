@@ -576,24 +576,40 @@ describe('client', () => {
 
     describe('with error', () => {
       it('should return an empty list if error in the index', () => {
-        expect.assertions(1);
+        expect.assertions(2);
 
+        uuid.mockReturnValue('baz');
         mockIndex.browseAll.mockImplementation(() => {
           throw new Error();
         });
 
-        const actual = module.getAllRecords().then(results => {
+        const actual = module.getAllRecords('my_index').then(results => {
           expect(results).toEqual([]);
+          expect(pulse.emit).toHaveBeenCalledWith(
+            'getAllRecords:end',
+            objectLike({
+              eventId: 'baz',
+              indexName: 'my_index',
+            })
+          );
         });
 
         return actual;
       });
 
       it('should return an empty list if error when browsing', () => {
-        expect.assertions(1);
+        expect.assertions(2);
+        uuid.mockReturnValue('baz');
 
-        const actual = module.getAllRecords().then(results => {
+        const actual = module.getAllRecords('my_index').then(results => {
           expect(results).toEqual([]);
+          expect(pulse.emit).toHaveBeenCalledWith(
+            'getAllRecords:end',
+            objectLike({
+              eventId: 'baz',
+              indexName: 'my_index',
+            })
+          );
         });
 
         browser.emit('error');
