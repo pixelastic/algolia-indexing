@@ -4,8 +4,15 @@ This module will let you perform complex indexing operations with ease.
 
 _⚠ This is still a heavy WIP and beta version_
 
-It comes with three modes\*, each with their own pros and cons, for you to use
-based on your needs.
+It comes with two modes\*, each with their own pros and cons, for you to use
+based on your needs. 
+
+- The _full atomic_ solution is usually the best method, but
+  requires you to have a plan that can acomodate a large number of records
+  (roughly 2x the number of records in your index). 
+- If you don't have that many records available, you can use the _live diff_
+  method that do not have this pre-requisite, but the drawback is that your
+  update won't be atomic.
 
 _\* Only one mode is implemented today._
 
@@ -14,7 +21,7 @@ _\* Only one mode is implemented today._
 ```javascript
 import indexing from 'algolia-indexing';
 
-const credentials = { appId: 'XXX', apiKey: 'YYY' }
+const credentials = { appId: 'XXX', apiKey: 'YYY', indexName: 'my_index' }
 const records = [{foo: 'bar'}];
 const settings = { searchableAttributes: ['foo'] };
 
@@ -23,14 +30,14 @@ indexing.fullAtomic(credentials, records, settings);
 
 This mode will update an index with new records and settings in an **atomic**
 way. It will be **fast** but will require a plan with a **large number of
-records**.
+records** (as we'll need to duplicate the index for a short period of time).
 
 How it works:
 
 - Set a unique objectID to each record, based on its content
 - Copy the production index to a temporary one
 - Compare the new records and the existing records in the index
-- Patch the temporary index, removing old records and adding new ones
+- Patch the temporary index by removing old records and adding new ones
 - Overwrite production index with temporary one
 
 To keep all processing fast, it uses a secondary index (called a manifest) to
@@ -40,27 +47,17 @@ store the list of objectIDs.
 
 This mode is similar to the full atomic, except that it will apply all
 modifications directly on the production index, without using a temporary index.
-
-It will still be fast and won't require a plan with a large number of records,
-but the atomicity cannot be guaranteed for large number of changes.
+This made it more suitable to run on plans where you're limited by the number of
+records you might have. The drawback is that modifications won't be atomic but
+incremental.
 
 How it works:
 
 - Set a unique objectID to each record, based on its content
 - Compare the new records and the existing records in the index
-- Patch the temporary index, removing old records and adding new ones
+- Patch the temporary index by removing old records and adding new ones
 
 _Note: This mode is not yet implemented._
-
-## Basic Atomic
-
-This mode will perform the most basic atomic update. It will be slow and will
-require a plan with a large number of records and operations.
-
-How it works:
-
-- Push all records to a temporary index
-- Overwrite the production index with the temporary one
 
 ## `.verbose()`
 
