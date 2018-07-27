@@ -4,8 +4,10 @@ This module will let you perform complex indexing operations with ease.
 
 _⚠ This is still a heavy WIP and beta version_
 
-It comes with three modes, each with their own pros and cons, for you to use
+It comes with three modes\*, each with their own pros and cons, for you to use
 based on your needs.
+
+_\* Only one mode is implemented today._
 
 ## Full Atomic
 
@@ -59,3 +61,48 @@ How it works:
 
 - Push all records to a temporary index
 - Overwrite the production index with the temporary one
+
+## `.verbose()`
+
+By default, all methods are silent. By calling `indexing.verbose()`, you enable
+the display of some progress indicators.
+
+![Example of a Full Atomic](./.github/full-atomic.gif)
+
+## Events
+
+The module emits events at different points in time. You can listen to them and
+react accordingly. Each event is fired with an object containing different
+information relative to the event that fired it. 
+
+All events have a specific key called `eventId` that is unique and shared across
+events of the same origin. For example, a batch operation will emit
+`batch:start` when starting, `batch:end` when finished and a certain number of
+`batch:chunk` events depending on how large the batch is. All those events will
+share the same `eventId`.
+
+| event                                       | attributes                                   |
+| --------------------------------------------|----------------------------------------------|
+| `copyIndex:start`, `copyIndex:end`          | `source`, `destination`                      | 
+| `moveIndex:start`, `moveIndex:end`          | `source`, `destination`                      | 
+| `clearIndex:start`, `clearIndex:end`        | `indexName`                                  | 
+| `setSettings:start`, `setSettings:end`      | `indexName`, `settings`                      |
+| `getAllRecords:start`, `getAllRecords:page` | `indexName`, `currentPage`, `maxPages`       |
+| `getAllRecords:end`                         | `indexName`                                  |
+| `batch:start`, `batch:chunk`                | `currentOperationCount`, `maxOperationCount` |
+| `batch:end`                                 |                                              |
+| `error`                                     | `message`                                    |
+
+## Config
+
+`algolia-indexing` has sensible default configuration, but allows you to turn
+knobs here and there.
+
+The following table lists all the config keys and their default values. To
+change a config value, you need to call `indexing.config({ keyToReplace:
+'newValue' })`.
+
+| Config                | Default Value | Description                                       |
+|-----------------------|--------------:|---------------------------------------------------|
+| `batchMaxSize`        | 1000          | Number of operations to send in one batch at most. |
+| `batchMaxConcurrency` | 10            | Number of batches do we run in parallel            |
