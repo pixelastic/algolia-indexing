@@ -7,14 +7,27 @@ _⚠ This is still a heavy WIP and beta version_
 It comes with two modes\*, each with their own pros and cons, for you to use
 based on your needs. 
 
-- The _full atomic_ solution is usually the best method, but
-  requires you to have a plan that can acomodate a large number of records
-  (roughly 2x the number of records in your index). 
-- If you don't have that many records available, you can use the _live diff_
-  method that do not have this pre-requisite, but the drawback is that your
-  update won't be atomic.
+- The `fullAtomic` solution is the best method, but requires that you have
+  a plan that can accommodate a large number of records (~2x the number of
+  records in your index). 
+- If you can't, you can use the `liveDiff` method instead that do not have this
+  pre-requisite, but the drawback is that your update won't be atomic.
 
-_\* Only one mode is implemented today._
+_\* Only the `fullAtomic` is implemented today._
+
+## Installation
+
+Install through `yarn` (or `npm`):
+
+```
+yarn add algolia-indexing
+```
+
+Then import into your JavaScript project with:
+
+```javascript
+import indexing from 'algolia-indexing';
+```
 
 ## Full Atomic
 
