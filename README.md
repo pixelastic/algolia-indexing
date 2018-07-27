@@ -114,5 +114,5 @@ change a config value, you need to call `indexing.config({ keyToReplace:
 
 | Config                | Default Value | Description                                       |
 |-----------------------|--------------:|---------------------------------------------------|
-| `batchMaxSize`        | 1000          | Number of operations to send in one batch at most. |
+| `batchMaxSize`        | 100           | Number of operations to send in one batch at most. |
 | `batchMaxConcurrency` | 10            | Number of batches do we run in parallel            |

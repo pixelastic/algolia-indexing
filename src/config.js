@@ -1,6 +1,6 @@
 export default {
   config: {
-    batchMaxSize: 1000, // How many operations to we execute in one batch
+    batchMaxSize: 100, // How many operations to we execute in one batch
     batchMaxConcurrency: 10, // How many batches do we run in parallel
   },
   read(key) {
