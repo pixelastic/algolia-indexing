@@ -1,6 +1,6 @@
 {
   "name": "algolia-indexing",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Perform complex indexing operations with ease.",
   "repository": "https://github.com/algolia/algolia-indexing.git",
   "license": "MIT",
