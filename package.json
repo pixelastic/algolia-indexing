@@ -17,7 +17,7 @@
     "run": "babel-node ./scripts/run/run.js"
   },
   "dependencies": {
-    "algoliasearch": "3.24.8",
+    "algoliasearch": "3.30.0",
     "lodash": "4.17.15",
     "node-object-hash": "^1.3.0",
     "p-all": "^1.0.0",
