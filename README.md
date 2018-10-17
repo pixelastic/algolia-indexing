@@ -38,7 +38,7 @@ const credentials = { appId: 'XXX', apiKey: 'YYY', indexName: 'my_index' }
 const records = [{foo: 'bar'}];
 const settings = { searchableAttributes: ['foo'] };
 
-indexing.fullAtomic(credentials, records, settings);
+await indexing.fullAtomic(credentials, records, settings);
 ```
 
 This mode will update an index with new records and settings in an **atomic**
