@@ -2,7 +2,9 @@
   "devDependencies": {
     "aberlaas": "1.4.3"
   },
-  "files": ["lib/*.js"],
+  "files": [
+    "lib/*.js"
+  ],
   "main": "lib/main.js",
   "name": "@pixelastic/algolia-indexing",
   "scripts": {
@@ -14,5 +16,11 @@
     "test": "./scripts/test",
     "test:watch": "./scripts/test-watch"
   },
-  "version": "0.0.8"
+  "version": "0.0.8",
+  "dependencies": {
+    "algoliasearch": "4.2.0",
+    "firost": "1.5.0",
+    "golgoth": "1.2.0",
+    "node-object-hash": "2.0.0"
+  }
 }
