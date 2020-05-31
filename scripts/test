@@ -1,5 +1,4 @@
 #!/usr/bin/env sh
-jest \
-  --config ./jest.config.js \
-  --no-cache \
-  ./src
+set -e
+
+aberlaas test "$@"

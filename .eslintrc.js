@@ -1,8 +1,3 @@
 module.exports = {
-  extends: ['algolia', 'algolia/jest'],
-  globals: {
-  },
-  rules: {
-    'no-console': 0
-  }
+  extends: ['./node_modules/aberlaas/lib/configs/eslint.js'],
 };

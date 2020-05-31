@@ -1,58 +1,18 @@
 {
-  "name": "algolia-indexing",
-  "version": "0.0.8",
-  "description": "Perform complex indexing operations with ease.",
-  "repository": "https://github.com/algolia/algolia-indexing.git",
-  "license": "MIT",
-  "main": "build/index.js",
-  "files": [
-    "build"
-  ],
-  "scripts": {
-    "lint": "./scripts/lint",
-    "test": "./scripts/test",
-    "test:watch": "./scripts/test-watch",
-    "build": "./scripts/build",
-    "release": "babel-node ./scripts/release.js",
-    "run": "babel-node ./scripts/run/run.js"
-  },
-  "dependencies": {
-    "algoliasearch": "3.30.0",
-    "lodash": "4.17.15",
-    "node-object-hash": "^1.3.0",
-    "p-all": "^1.0.0",
-    "p-map": "^1.2.0"
-  },
   "devDependencies": {
-    "@babel/cli": "^7.0.0-beta.51",
-    "@babel/core": "^7.0.0-beta.51",
-    "@babel/node": "^7.0.0-beta.51",
-    "@babel/plugin-proposal-object-rest-spread": "^7.0.0-beta.51",
-    "@babel/preset-env": "^7.0.0-beta.51",
-    "babel-core": "^7.0.0-bridge.0",
-    "babel-eslint": "^8.2.3",
-    "babel-jest": "^23.0.1",
-    "babel-loader": "^7.1.5",
-    "chalk": "^2.4.1",
-    "dotenv": "4.0.0",
-    "eslint": "^4.19.1",
-    "eslint-config-algolia": "^13.1.0",
-    "eslint-config-prettier": "^2.9.0",
-    "eslint-plugin-import": "^2.11.0",
-    "eslint-plugin-jest": "^21.15.1",
-    "eslint-plugin-prettier": "^2.6.0",
-    "eventemitter2": "^5.0.1",
-    "hash-mod": "^0.0.5",
-    "jest": "^23.0.0",
-    "mversion": "^1.12.0",
-    "ora": "^3.0.0",
-    "pify": "^3.0.0",
-    "prettier": "1.9.2",
-    "prompt": "^1.0.0",
-    "semver": "^5.5.0",
-    "shelljs": "^0.8.2",
-    "uuid": "^3.3.2",
-    "webpack": "^4.16.2",
-    "webpack-command": "^0.4.1"
-  }
+    "aberlaas": "1.4.3"
+  },
+  "files": ["lib/*.js"],
+  "main": "lib/main.js",
+  "name": "@pixelastic/algolia-indexing",
+  "scripts": {
+    "ci": "./scripts/ci",
+    "husky:precommit": "./scripts/husky-precommit",
+    "lint": "./scripts/lint",
+    "lint:fix": "./scripts/lint-fix",
+    "release": "./scripts/release",
+    "test": "./scripts/test",
+    "test:watch": "./scripts/test-watch"
+  },
+  "version": "0.0.8"
 }

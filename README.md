@@ -9,7 +9,7 @@ but I, @pixelastic, took ownership.
 
 ## Installation
 
-Install through `yarn` (or `npm`):
+Install through `yarn`:
 
 ```shell
 yarn add algolia-indexing
