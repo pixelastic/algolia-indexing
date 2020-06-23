@@ -13,7 +13,6 @@ Install through `yarn` (or `npm`):
 
 ```shell
 yarn add algolia-indexing
->>>>>>> docs(readme): Add documentation about replicas
 ```
 
 ## Usage
