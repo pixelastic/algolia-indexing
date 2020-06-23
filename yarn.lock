@@ -4710,6 +4710,14 @@ import-local@^3.0.2:
     pkg-dir "^4.2.0"
     resolve-cwd "^3.0.0"
 
+import2require@0.2.1:
+  version "0.2.1"
+  resolved "https://registry.npmjs.org/import2require/-/import2require-0.2.1.tgz#19d1574b1191432a7cc0e3085501ecbab3f83a84"
+  integrity sha512-fhEtg4GmfFQCN+17OHmRxPeu30Ugpg7IvXVTxlCFhX9KUbgJuVhpiThCBRToW3rLChxHoLEY+1DrLIBzTmvRzQ==
+  dependencies:
+    firost "1.5.1"
+    golgoth "1.2.0"
+
 imurmurhash@^0.1.4:
   version "0.1.4"
   resolved "https://registry.npmjs.org/imurmurhash/-/imurmurhash-0.1.4.tgz#9218b9b2b928a238b13dc4fb6b6d576f231453ea"
