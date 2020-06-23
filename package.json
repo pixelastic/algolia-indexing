@@ -1,7 +1,6 @@
 {
   "devDependencies": {
-    "aberlaas": "1.4.3",
-    "import2require": "0.2.1"
+    "aberlaas": "1.7.1"
   },
   "files": [
     "lib/*.js"
