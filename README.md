@@ -51,27 +51,38 @@ the display of some progress indicators.
 
 ## Events
 
-The module emits events at different points in time. You can listen to them and
-react accordingly. Each event is fired with an object containing different
-information relative to the event that fired it.
+The module `.pulse` key emits events at different points in time. You can listen
+to them and react accordingly. Each event is fired with an object containing
+different information relative to the event that fired it.
+
+```javascript
+const indexing = require('algolia-indexing');
+
+indexing.pulse.on('copyIndex.start', ({ source, destination }) => {
+  console.info(`Start moving ${source} to ${destination}`);
+});
+indexing.pulse.on('copyIndex.end', ({ source, destination }) => {
+  console.info(`Finished moving ${source} to ${destination}`);
+});
+```
 
 All events have a specific key called `eventId` that is unique and shared across
 events of the same origin. For example, a batch operation will emit
-`batch:start` when starting, `batch:end` when finished and a certain number of
-`batch:chunk` events depending on how large the batch is. All those events will
+`batch.start` when starting, `batch.end` when finished and a certain number of
+`batch.chunk` events depending on how large the batch is. All those events will
 share the same `eventId`.
 
 | event                                              | attributes                                   |
 | -------------------------------------------------- | -------------------------------------------- |
-| `copyIndex:start`, `copyIndex:end`                 | `source`, `destination`                      |
-| `moveIndex:start`, `moveIndex:end`                 | `source`, `destination`                      |
-| `clearIndex:start`, `clearIndex:end`               | `indexName`                                  |
-| `setSettings:start`, `setSettings:end`             | `indexName`, `settings`                      |
-| `configureReplicas:start`, `configureReplicas:end` | `indexName`                                  |
-| `getAllRecords:start`, `getAllRecords:page`        | `indexName`, `currentPage`, `maxPages`       |
-| `getAllRecords:end`                                | `indexName`                                  |
-| `batch:start`, `batch:chunk`                       | `currentOperationCount`, `maxOperationCount` |
-| `batch:end`                                        |                                              |
+| `copyIndex.start`, `copyIndex.end`                 | `source`, `destination`                      |
+| `moveIndex.start`, `moveIndex.end`                 | `source`, `destination`                      |
+| `clearIndex.start`, `clearIndex.end`               | `indexName`                                  |
+| `setSettings.start`, `setSettings.end`             | `indexName`, `settings`                      |
+| `configureReplicas.start`, `configureReplicas.end` | `indexName`                                  |
+| `getAllRecords.start`, `getAllRecords.page`        | `indexName`, `currentPage`, `maxPages`       |
+| `getAllRecords.end`                                | `indexName`                                  |
+| `batch.start`, `batch.chunk`                       | `currentOperationCount`, `maxOperationCount` |
+| `batch.end`                                        |                                              |
 | `error`                                            | `message`                                    |
 
 ## Config
