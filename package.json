@@ -1,6 +1,6 @@
 {
   "devDependencies": {
-    "aberlaas": "1.7.1"
+    "aberlaas": "1.9.1"
   },
   "files": [
     "lib/*.js"
