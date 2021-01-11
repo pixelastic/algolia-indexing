@@ -20,7 +20,7 @@
   "dependencies": {
     "algoliasearch": "4.2.0",
     "firost": "1.5.1",
-    "golgoth": "1.2.0",
+    "golgoth": "2.0.0",
     "node-object-hash": "2.0.0"
   }
 }
