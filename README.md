@@ -39,9 +39,6 @@ How it works:
 - Patch the temporary index by removing old records and adding new ones
 - Overwrite production index with temporary one
 
-To keep all processing fast, it uses a secondary index (called a manifest) to
-store the list of objectIDs.
-
 ### `.verbose()`
 
 By default, all methods are silent. By calling `indexing.verbose()`, you enable
