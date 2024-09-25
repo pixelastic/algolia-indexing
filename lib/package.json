@@ -24,8 +24,8 @@
   "main": "./main.js",
   "dependencies": {
     "algoliasearch": "4.2.0",
-    "firost": "2.6.1",
-    "golgoth": "2.0.0",
+    "firost": "3.5.0",
+    "golgoth": "2.4.0",
     "node-object-hash": "2.0.0"
   },
   "scripts": {
