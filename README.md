@@ -4,8 +4,8 @@ This module abstract complex indexing operations under one simple command. Its
 goal is to use as few operations as possible when updating an index, by
 performing diff comparisons instead of a full delete/overwrite.
 
-Starting from v1.0, this package is no longer officially maintained by Algolia
-but I, @pixelastic, took ownership.
+This package has been originally created by Algolia, but is no longer officially
+supported.
 
 ## Installation
 
@@ -18,7 +18,7 @@ yarn add algolia-indexing
 ## Usage
 
 ```javascript
-const indexing = require('algolia-indexing');
+import indexing from 'algolia-indexing';
 
 const credentials = { appId: 'XXX', apiKey: 'YYY', indexName: 'my_index' };
 const records = [{ foo: 'bar' }];
@@ -33,7 +33,7 @@ records** (as we'll need to duplicate the index for a short period of time).
 
 How it works:
 
-- Set a unique objectID to each record, based on its content
+- Set a unique objectID to each record (a hashed string of its content)
 - Copy the production index to a temporary one
 - Compare the new records and the existing records in the index
 - Patch the temporary index by removing old records and adding new ones
@@ -53,7 +53,7 @@ to them and react accordingly. Each event is fired with an object containing
 different information relative to the event that fired it.
 
 ```javascript
-const indexing = require('algolia-indexing');
+import indexing from 'algolia-indexing';
 
 indexing.pulse.on('copyIndex.start', ({ source, destination }) => {
   console.info(`Start moving ${source} to ${destination}`);
@@ -118,7 +118,7 @@ const settings = {
     },
   },
 };
-const indexing.fullAtomic(credentials, records, settings);
+await indexing.fullAtomic(credentials, records, settings);
 ```
 
 The above config will order results by date, then score on the main index, but
