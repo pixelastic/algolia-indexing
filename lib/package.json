@@ -1,6 +1,6 @@
 {
   "name": "algolia-indexing",
-  "version": "1.0.0",
+  "version": "1.3.0",
   "author": "Tim Carry (@pixelastic)",
   "description": "Atomic indexing for Algolia. Only update what changed instead of overwriting the whole index.",
   "keywords": [

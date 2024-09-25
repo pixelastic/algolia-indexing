@@ -1,11 +1,11 @@
 {
   "private": true,
-  "name": "false-docs",
+  "name": "algolia-indexing-docs",
   "version": "1.0.0",
   "author": false,
-  "description": "false docs",
-  "repository": "false/false",
-  "homepage": "https://projects.pixelastic.com/false",
+  "description": "algolia-indexing docs",
+  "repository": "pixelastic/algolia-indexing",
+  "homepage": "https://projects.pixelastic.com/algolia-indexing",
   "license": "MIT",
   "dependencies": {
     "norska": "2.9.0",
