@@ -30,11 +30,11 @@
     "g:cms": "./scripts/docs/cms",
     "g:compress": "./scripts/compress",
     "g:lint": "./scripts/lint",
-    "g:lint:fix": "./scripts/lint-fix"
+    "g:lint:fix": "./scripts/lint-fix",
     "g:release": "./scripts/lib/release",
     "g:serve": "./scripts/docs/serve",
     "g:test": "./scripts/lib/test",
-    "g:test:watch": "./scripts/lib/test-watch",
+    "g:test:watch": "./scripts/lib/test-watch"
   },
   "packageManager": "yarn@4.0.2"
 }
