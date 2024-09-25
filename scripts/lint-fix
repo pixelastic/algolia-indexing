@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 set -e
 
-aberlaas lint "$@" --fix
+aberlaas lint --fix "${@:-$INIT_CWD}"

@@ -1,0 +1,26 @@
+{
+  "private": true,
+  "name": "false-docs",
+  "version": "0.0.1",
+  "author": false,
+  "description": "false docs",
+  "repository": "false/false",
+  "homepage": "https://projects.pixelastic.com/false",
+  "license": "MIT",
+  "dependencies": {
+    "norska": "2.9.0",
+    "norska-theme-docs": "5.0.3"
+  },
+  "scripts": {
+    "build": "ABERLAAS_CWD=$INIT_CWD yarn g:build",
+    "build:prod": "ABERLAAS_CWD=$INIT_CWD yarn g:build:prod",
+    "cms": "ABERLAAS_CWD=$INIT_CWD yarn g:cms",
+    "serve": "ABERLAAS_CWD=$INIT_CWD yarn g:serve",
+    "release": "ABERLAAS_CWD=$INIT_CWD yarn g:release",
+    "test": "ABERLAAS_CWD=$INIT_CWD yarn g:test",
+    "test:watch": "ABERLAAS_CWD=$INIT_CWD yarn g:test:watch",
+    "compress": "ABERLAAS_CWD=$INIT_CWD yarn g:compress",
+    "lint": "ABERLAAS_CWD=$INIT_CWD yarn g:lint",
+    "lint:fix": "ABERLAAS_CWD=$INIT_CWD yarn g:lint:fix"
+  }
+}
