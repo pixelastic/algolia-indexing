@@ -1,3 +1,6 @@
 {
-  "extends": ["config:js-lib", "aberlaas"]
+  "extends": [
+    "config:js-lib",
+    "github>pixelastic/renovate-config-aberlaas"
+  ]
 }
